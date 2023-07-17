@@ -118,6 +118,12 @@ public:
 		declare_parameter("robot_frame", "robot");
 		declare_parameter("laser_frame", "laser");
 
+		declare_parameter("scan_resolution", 0.1);
+		declare_parameter("map_resolution", 0.1);
+		declare_parameter("pose_translation", 0.5);
+		declare_parameter("pose_rotation", 0.5);
+
+
 		mLogger = new slam3d::Logger(mClock);
 		mLogger->setLogLevel(slam3d::DEBUG);
 
@@ -127,12 +133,15 @@ public:
 		mPclSensor = new slam3d::PointCloudSensor("Velodyne", mLogger);
 		
 		slam3d::RegistrationParameters regParams;
-		regParams.point_cloud_density = 1.0;
+		regParams.point_cloud_density = 0.0;
 		regParams.maximum_iterations = 10;
 		regParams.max_correspondence_distance = 2.0;
 		
-		mPclSensor->setMinPoseDistance(0.25, 0.5);
-		mPclSensor->setMapResolution(0.2);
+		mPclSensor->setMinPoseDistance(
+			get_parameter("pose_translation").as_double(),
+			get_parameter("pose_rotation").as_double());
+
+		mPclSensor->setMapResolution(get_parameter("map_resolution").as_double());
 		mPclSensor->setRegistrationParameters(regParams, false);
 		mPclSensor->setNeighborRadius(5.0, 1);
 		mPclSensor->setLinkPrevious(true);
@@ -184,7 +193,7 @@ private:
 			slam3d::Transform odometry_pose = tf2::transformToEigen(
 				mTfBuffer.lookupTransform(mOdometryFrame, mRobotFrame, msg->header.stamp, TF_TIMEOUT));
 
-			slam3d::PointCloud::Ptr scan = mPclSensor->downsample(pc, 0.1);
+			slam3d::PointCloud::Ptr scan = mPclSensor->downsample(pc, get_parameter("scan_resolution").as_double());
 			
 			slam3d::PointCloudMeasurement::Ptr m(new slam3d::PointCloudMeasurement(scan, "Robot", mPclSensor->getName(), laser_pose));
 			
