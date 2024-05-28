@@ -16,75 +16,43 @@
 #include <slam3d/sensor/pcl/PointCloudSensor.hpp>
 #include <slam3d/core/Mapper.hpp>
 
+#include <RosClock.hpp>
 #include <GraphPublisher.hpp>
 
 using namespace std::chrono_literals;
+using namespace slam3d;
 
 #define TF_TIMEOUT 50ms
 
-timeval fromRosTime(const rclcpp::Time& rt)
-{
-	timeval t;
-	t.tv_sec = rt.seconds();
-
-	rcl_time_point_value_t diff = t.tv_sec * 1000000000;
-	rcl_time_point_value_t nsec = rt.nanoseconds() - diff;
-	t.tv_usec = nsec / 1000;
-	return t;
-}
-
-rclcpp::Time fromTimeval(const timeval& tv)
-{
-	return rclcpp::Time(tv.tv_sec, tv.tv_usec * 1000, RCL_CLOCK_UNINITIALIZED);
-}
-
-class RosClock : public slam3d::Clock
+class TfOdometry : public PoseSensor
 {
 public:
-	RosClock(rclcpp::Clock::SharedPtr clock) : mRosClock(clock){}
-
-	virtual timeval now()
-	{
-		return fromRosTime(mRosClock->now());
-	}
-	
-	rclcpp::Time ros_now()
-	{
-		return mRosClock->now();
-	}
-private:
-	rclcpp::Clock::SharedPtr mRosClock;
-};
-
-class TfOdometry : public slam3d::PoseSensor
-{
-public:
-	TfOdometry(slam3d::Graph* g, slam3d::Logger* l, tf2_ros::Buffer* tf, const std::string& robot_f, const std::string& odom_f)
-	: slam3d::PoseSensor("Odometry", g, l), mTfBuffer(tf), mRobotFrame(robot_f), mOdometryFrame(odom_f)
+	TfOdometry(Graph* g, Logger* l, tf2_ros::Buffer* tf, const std::string& robot_f, const std::string& odom_f)
+	: PoseSensor("Odometry", g, l), mTfBuffer(tf), mRobotFrame(robot_f), mOdometryFrame(odom_f)
 	{
 		mLastVertex = 0;
 	}
 	
-	slam3d::Transform getPose(timeval stamp)
+	Transform getPose(timeval stamp)
 	{
 		try
 		{
 			return tf2::transformToEigen(mTfBuffer->lookupTransform(mOdometryFrame, mRobotFrame, fromTimeval(stamp), TF_TIMEOUT));
 		}catch (const tf2::TransformException & ex)
 		{
-			throw slam3d::InvalidPose(ex.what());
+			throw InvalidPose(ex.what());
 		}
 	}
 	
-	void handleNewVertex(slam3d::IdType vertex)
+	void handleNewVertex(IdType vertex)
 	{
 		timeval stamp = mGraph->getVertex(vertex).timestamp;
-		slam3d::Transform currentPose = getPose(stamp);
+		Transform currentPose = getPose(stamp);
 		
 		if(mLastVertex > 0)
 		{
-			slam3d::Transform t = mLastOdometricPose.inverse() * currentPose;
-			slam3d::SE3Constraint::Ptr se3(new slam3d::SE3Constraint(mName, t, slam3d::Covariance<6>::Identity() * 0.01));
+			Transform t = mLastOdometricPose.inverse() * currentPose;
+			SE3Constraint::Ptr se3(new SE3Constraint(mName, t, Covariance<6>::Identity() * 0.01));
 			try
 			{
 				mGraph->addConstraint(mLastVertex, vertex, se3);
@@ -102,8 +70,8 @@ public:
 	
 private:
 	tf2_ros::Buffer* mTfBuffer;
-	slam3d::Transform mLastOdometricPose;
-	slam3d::IdType mLastVertex;
+	Transform mLastOdometricPose;
+	IdType mLastVertex;
 	std::string mRobotFrame;
 	std::string mOdometryFrame;
 
@@ -125,16 +93,15 @@ public:
 		declare_parameter("pose_translation", 0.5);
 		declare_parameter("pose_rotation", 0.5);
 
+		mLogger = new Logger(mClock);
+		mLogger->setLogLevel(DEBUG);
 
-		mLogger = new slam3d::Logger(mClock);
-		mLogger->setLogLevel(slam3d::DEBUG);
+		mStorage = new MeasurementStorage();
+		mGraph = new BoostGraph(mLogger, mStorage);
+		mSolver = new G2oSolver(mLogger);
+		mPclSensor = new PointCloudSensor("Velodyne", mLogger);
 
-		mStorage = new slam3d::MeasurementStorage();
-		mGraph = new slam3d::BoostGraph(mLogger, mStorage);
-		mSolver = new slam3d::G2oSolver(mLogger);
-		mPclSensor = new slam3d::PointCloudSensor("Velodyne", mLogger);
-		
-		slam3d::RegistrationParameters regParams;
+		RegistrationParameters regParams;
 		regParams.point_cloud_density = 0.0;
 		regParams.maximum_iterations = 10;
 		regParams.max_correspondence_distance = 2.0;
@@ -157,7 +124,7 @@ public:
 		
 		mGraph->setSolver(mSolver);
 		
-		mMapper = new slam3d::Mapper(mGraph, mLogger, slam3d::Transform::Identity());
+		mMapper = new Mapper(mGraph, mLogger, Transform::Identity());
 		mMapper->registerSensor(mPclSensor);
 		
 		mTfOdom = new TfOdometry(mGraph, mLogger, &mTfBuffer, mRobotFrame, mOdometryFrame);
@@ -190,29 +157,29 @@ private:
 	{
 		try
 		{
-			slam3d::PointCloud::Ptr pc(new slam3d::PointCloud);
+			PointCloud::Ptr pc(new PointCloud);
 			pcl::fromROSMsg(*msg, *pc);
 			
-			slam3d::Transform laser_pose = tf2::transformToEigen(
+			Transform laser_pose = tf2::transformToEigen(
 				mTfBuffer.lookupTransform(mRobotFrame, msg->header.frame_id, msg->header.stamp, TF_TIMEOUT));
 
-			slam3d::Transform odometry_pose = tf2::transformToEigen(
+			Transform odometry_pose = tf2::transformToEigen(
 				mTfBuffer.lookupTransform(mOdometryFrame, mRobotFrame, msg->header.stamp, TF_TIMEOUT));
 
-			slam3d::PointCloud::Ptr scan = mPclSensor->downsample(pc, get_parameter("scan_resolution").as_double());
+			PointCloud::Ptr scan = mPclSensor->downsample(pc, get_parameter("scan_resolution").as_double());
 			
-			slam3d::PointCloudMeasurement::Ptr m(new slam3d::PointCloudMeasurement(scan, "Robot", mPclSensor->getName(), laser_pose));
+			PointCloudMeasurement::Ptr m(new PointCloudMeasurement(scan, "Robot", mPclSensor->getName(), laser_pose));
 			
 			if(mPclSensor->addMeasurement(m, odometry_pose))
 			{
-				mDrift = tf2::eigenToTransform(slam3d::orthogonalize(mPclSensor->getCurrentPose() * odometry_pose.inverse()));
+				mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose() * odometry_pose.inverse()));
 				mDrift.header.frame_id = mMapFrame;
 				mDrift.child_frame_id = mOdometryFrame;
 			}
 		}
 		catch(std::exception& e)
 		{
-			mLogger->message(slam3d::ERROR, e.what());
+			mLogger->message(ERROR, e.what());
 		}
 	}
 
@@ -220,8 +187,8 @@ private:
 	                       std::shared_ptr<std_srvs::srv::Empty::Response> response)
 	{
 		mGraph->optimize();
-		slam3d::VertexObjectList vertices = mGraph->getVerticesFromSensor(mPclSensor->getName());
-		slam3d::PointCloud::Ptr map = mPclSensor->buildMap(vertices);
+		VertexObjectList vertices = mGraph->getVerticesFromSensor(mPclSensor->getName());
+		PointCloud::Ptr map = mPclSensor->buildMap(vertices);
 		sensor_msgs::msg::PointCloud2 pc2_msg;
 		pcl::toROSMsg(*map, pc2_msg);
 		pc2_msg.header.frame_id = mMapFrame;
@@ -232,13 +199,13 @@ private:
 		mGraphPublisher->publishEdges(mPclSensor->getName(), pc2_msg.header.stamp, pc2_msg.header.frame_id);
 	}
 
-	slam3d::Mapper* mMapper;
-	slam3d::BoostGraph* mGraph;
-	slam3d::MeasurementStorage* mStorage;
-	slam3d::G2oSolver* mSolver;
-	slam3d::PointCloudSensor* mPclSensor;
+	Mapper* mMapper;
+	BoostGraph* mGraph;
+	MeasurementStorage* mStorage;
+	G2oSolver* mSolver;
+	PointCloudSensor* mPclSensor;
 	RosClock mClock;
-	slam3d::Logger* mLogger;
+	Logger* mLogger;
 	TfOdometry* mTfOdom;
 	
 	GraphPublisher* mGraphPublisher;
