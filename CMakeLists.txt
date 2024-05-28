@@ -15,7 +15,61 @@ find_package(slam3d 3 REQUIRED)
 # Needed by pcl_conversions, but not properly exported in foxy
 find_package(PCL 1.7 REQUIRED COMPONENTS common)
 
-add_subdirectory(src)
+# Public library with generic ROS functions
+add_library(${PROJECT_NAME} SHARED
+	src/GraphPublisher.cpp
+#	src/GpsPublisher.cpp
+#	src/LoopCloser.cpp
+)
+
+target_include_directories(${PROJECT_NAME}
+	PUBLIC
+		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(${PROJECT_NAME}
+	PUBLIC
+		slam3d::core
+		rclcpp::rclcpp
+		${visualization_msgs_TARGETS}
+)
+
+install(
+	TARGETS ${PROJECT_NAME}
+	EXPORT ${PROJECT_NAME}_exports
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
+	RUNTIME DESTINATION bin
+)
+
+install(
+	DIRECTORY include/
+	DESTINATION include/${PROJECT_NAME}
+	FILES_MATCHING PATTERN "*.hpp"
+)
+
+# Simple mapper node to create a pointcloud map
+add_executable(pointcloud_mapper
+	src/pointcloud_mapper.cpp
+)
+
+target_link_libraries(pointcloud_mapper PUBLIC
+	rclcpp::rclcpp
+	tf2_ros::tf2_ros
+	${sensor_msgs_TARGETS}
+	${std_srvs_TARGETS}
+	${PCL_COMMON_LIBRARIES}
+	slam3d::solver-g2o
+	slam3d::graph-boost
+	slam3d::sensor-pcl
+	${PROJECT_NAME}
+)
+
+install(
+	TARGETS pointcloud_mapper
+	DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_export_targets(slam3d_ros2_exports HAS_LIBRARY_TARGET)
 ament_export_dependencies(rclcpp visualization_msgs slam3d)

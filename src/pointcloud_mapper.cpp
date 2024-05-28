@@ -16,7 +16,7 @@
 #include <slam3d/sensor/pcl/PointCloudSensor.hpp>
 #include <slam3d/core/Mapper.hpp>
 
-#include <visualization/GraphPublisher.hpp>
+#include <GraphPublisher.hpp>
 
 using namespace std::chrono_literals;
 
