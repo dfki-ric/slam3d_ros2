@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CodeLite_Project Name="slam3d_ros2" Version="10.0.0" InternalType="">
   <VirtualDirectory Name="src">
+    <File Name="src/CMakeLists.txt"/>
+    <VirtualDirectory Name="visualization">
+      <File Name="src/visualization/LoopCloser.hpp"/>
+      <File Name="src/visualization/GraphPublisher.hpp"/>
+      <File Name="src/visualization/GpsPublisher.hpp"/>
+      <File Name="src/visualization/LoopCloser.cpp"/>
+      <File Name="src/visualization/GraphPublisher.cpp"/>
+      <File Name="src/visualization/GpsPublisher.cpp"/>
+      <File Name="src/visualization/CMakeLists.txt"/>
+    </VirtualDirectory>
+    <VirtualDirectory Name="interface">
+      <File Name="src/interface/ros_tf.cpp"/>
+      <File Name="src/interface/ros_common.cpp"/>
+      <File Name="src/interface/helper_functions.cpp"/>
+      <File Name="src/interface/CMakeLists.txt"/>
+    </VirtualDirectory>
     <File Name="src/pointcloud_mapper.cpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="build">
