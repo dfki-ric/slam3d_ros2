@@ -8,30 +8,16 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(slam3d 2.5 REQUIRED)
 
 # Needed by pcl_conversions, but not properly exported in foxy
 find_package(PCL 1.7 REQUIRED COMPONENTS common)
 
-add_executable(pointcloud_mapper
-	src/pointcloud_mapper.cpp
-)
+add_subdirectory(src)
 
-target_link_libraries(pointcloud_mapper
-	rclcpp::rclcpp
-	tf2_ros::tf2_ros
-	${sensor_msgs_TARGETS}
-	${std_srvs_TARGETS}
-	${PCL_COMMON_LIBRARIES}
-	slam3d::solver-g2o
-	slam3d::graph-boost
-	slam3d::sensor-pcl
-)
-
-install(
-	TARGETS pointcloud_mapper
-	DESTINATION lib/${PROJECT_NAME}
-)
+ament_export_targets(slam3d_ros2_exports HAS_LIBRARY_TARGET)
+ament_export_dependencies(rclcpp visualization_msgs slam3d)
 
 ament_package()

@@ -16,6 +16,8 @@
 #include <slam3d/sensor/pcl/PointCloudSensor.hpp>
 #include <slam3d/core/Mapper.hpp>
 
+#include <visualization/GraphPublisher.hpp>
+
 using namespace std::chrono_literals;
 
 #define TF_TIMEOUT 50ms
@@ -169,6 +171,10 @@ public:
 		
 		mGenerateMapService = create_service<std_srvs::srv::Empty>("generate_map",
 			std::bind(&PointcloudMapper::generateMap, this, std::placeholders::_1, std::placeholders::_2));
+
+		mGraphPublisher = new GraphPublisher(this, mGraph);
+		mGraphPublisher->addNodeSensor(mPclSensor->getName(), 0,1,0);
+		mGraphPublisher->addEdgeSensor(mPclSensor->getName());
 	}
 
 private:
@@ -220,6 +226,9 @@ private:
 		pc2_msg.header.frame_id = mMapFrame;
 		pc2_msg.header.stamp = mClock.ros_now();
 		mMapPublisher->publish(pc2_msg);
+		
+		mGraphPublisher->publishNodes(pc2_msg.header.stamp, pc2_msg.header.frame_id);
+		mGraphPublisher->publishEdges(mPclSensor->getName(), pc2_msg.header.stamp, pc2_msg.header.frame_id);
 	}
 
 	slam3d::Mapper* mMapper;
@@ -229,6 +238,8 @@ private:
 	RosClock mClock;
 	slam3d::Logger* mLogger;
 	TfOdometry* mTfOdom;
+	
+	GraphPublisher* mGraphPublisher;
 	
 	std::string mMapFrame;
 	std::string mOdometryFrame;
