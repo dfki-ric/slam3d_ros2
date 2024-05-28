@@ -17,6 +17,7 @@ find_package(PCL 1.7 REQUIRED COMPONENTS common)
 
 # Public library with generic ROS functions
 add_library(${PROJECT_NAME} SHARED
+	src/RosClock.cpp
 	src/GraphPublisher.cpp
 #	src/GpsPublisher.cpp
 #	src/LoopCloser.cpp
