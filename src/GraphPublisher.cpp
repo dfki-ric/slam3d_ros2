@@ -72,12 +72,12 @@ void GraphPublisher::publishNodes(const rclcpp::Time& stamp, const std::string& 
 	unsigned i = 0;
 	for(VertexObjectList::const_iterator it = vertices.begin(); it != vertices.end(); it++)
 	{
-		Transform pose = it->corrected_pose;
+		Transform pose = it->correctedPose;
 		marker.points[i].x = pose.translation()[0];
 		marker.points[i].y = pose.translation()[1];
 		marker.points[i].z = pose.translation()[2];
 		
-		Color c = mSensorMap.at(it->measurement->getSensorName());
+		Color c = mSensorMap.at(it->sensorName);
 		marker.colors[i].r = c.r;
 		marker.colors[i].g = c.g;
 		marker.colors[i].b = c.b;
@@ -139,19 +139,19 @@ void GraphPublisher::publishEdges(const std::string& sensor, const rclcpp::Time&
 			continue;
 
 		const VertexObject& source_obj = mGraph->getVertex(edge->source);
-		Transform::ConstTranslationPart source_pose = source_obj.corrected_pose.translation();
+		Transform::ConstTranslationPart source_pose = source_obj.correctedPose.translation();
 		marker.points[2*i].x = source_pose[0];
 		marker.points[2*i].y = source_pose[1];
 		marker.points[2*i].z = source_pose[2];
 
 		const VertexObject& target_obj = mGraph->getVertex(edge->target);
-		Transform::ConstTranslationPart target_pose = target_obj.corrected_pose.translation();
+		Transform::ConstTranslationPart target_pose = target_obj.correctedPose.translation();
 		marker.points[2*i+1].x = target_pose[0];
 		marker.points[2*i+1].y = target_pose[1];
 		marker.points[2*i+1].z = target_pose[2];
 		
 		SE3Constraint::Ptr se3 = boost::dynamic_pointer_cast<SE3Constraint>(edge->constraint);
-		Transform diff_inv = target_obj.corrected_pose.inverse() * source_obj.corrected_pose;
+		Transform diff_inv = target_obj.correctedPose.inverse() * source_obj.correctedPose;
 		Transform error = diff_inv * se3->getRelativePose();
 		
 		Transform::TranslationPart trans = error.translation();
@@ -205,7 +205,7 @@ void GraphPublisher::publishPoseEdges(const std::string& sensor, const rclcpp::T
 		PositionConstraint::Ptr pos = boost::dynamic_pointer_cast<PositionConstraint>(edge->constraint);
 
 		const VertexObject& source_obj = mGraph->getVertex(edge->source);
-		Transform::ConstTranslationPart source_pose = (source_obj.corrected_pose * pos->getSensorPose()).translation();
+		Transform::ConstTranslationPart source_pose = (source_obj.correctedPose * pos->getSensorPose()).translation();
 		marker.points[2*i].x = source_pose[0];
 		marker.points[2*i].y = source_pose[1];
 		marker.points[2*i].z = source_pose[2];
