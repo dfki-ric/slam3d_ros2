@@ -46,7 +46,7 @@ public:
 	
 	void handleNewVertex(IdType vertex)
 	{
-		timeval stamp = mGraph->getVertex(vertex).measurement->getTimestamp();
+		timeval stamp = mGraph->getVertex(vertex).timestamp;
 		Transform currentPose = getPose(stamp);
 		
 		if(mLastVertex > 0)
@@ -61,7 +61,7 @@ public:
 				std::cout << "Failed to link vertex " << vertex << " to " << mLastVertex << std::endl;
 				return;
 			}
-			mGraph->setCorrectedPose(vertex, mGraph->getVertex(mLastVertex).corrected_pose * t);
+			mGraph->setCorrectedPose(vertex, mGraph->getVertex(mLastVertex).correctedPose * t);
 		}
 		
 		mLastVertex = vertex;
@@ -93,11 +93,11 @@ public:
 		declare_parameter("pose_translation", 0.5);
 		declare_parameter("pose_rotation", 0.5);
 
-
 		mLogger = new Logger(mClock);
 		mLogger->setLogLevel(DEBUG);
-		
-		mGraph = new BoostGraph(mLogger);
+
+		mStorage = new MeasurementStorage();
+		mGraph = new BoostGraph(mLogger, mStorage);
 		mSolver = new G2oSolver(mLogger);
 		mPclSensor = new PointCloudSensor("Velodyne", mLogger);
 		
@@ -201,6 +201,7 @@ private:
 
 	Mapper* mMapper;
 	BoostGraph* mGraph;
+	MeasurementStorage* mStorage;
 	G2oSolver* mSolver;
 	PointCloudSensor* mPclSensor;
 	RosClock mClock;
