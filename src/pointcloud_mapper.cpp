@@ -76,7 +76,7 @@ public:
 	
 	void handleNewVertex(slam3d::IdType vertex)
 	{
-		timeval stamp = mGraph->getVertex(vertex).measurement->getTimestamp();
+		timeval stamp = mGraph->getVertex(vertex).timestamp;
 		slam3d::Transform currentPose = getPose(stamp);
 		
 		if(mLastVertex > 0)
@@ -91,7 +91,7 @@ public:
 				std::cout << "Failed to link vertex " << vertex << " to " << mLastVertex << std::endl;
 				return;
 			}
-			mGraph->setCorrectedPose(vertex, mGraph->getVertex(mLastVertex).corrected_pose * t);
+			mGraph->setCorrectedPose(vertex, mGraph->getVertex(mLastVertex).correctedPose * t);
 		}
 		
 		mLastVertex = vertex;
@@ -120,8 +120,9 @@ public:
 
 		mLogger = new slam3d::Logger(mClock);
 		mLogger->setLogLevel(slam3d::DEBUG);
-		
-		mGraph = new slam3d::BoostGraph(mLogger);
+
+		mStorage = new slam3d::MeasurementStorage();
+		mGraph = new slam3d::BoostGraph(mLogger, mStorage);
 		mSolver = new slam3d::G2oSolver(mLogger);
 		mPclSensor = new slam3d::PointCloudSensor("Velodyne", mLogger);
 		
@@ -215,6 +216,7 @@ private:
 
 	slam3d::Mapper* mMapper;
 	slam3d::BoostGraph* mGraph;
+	slam3d::MeasurementStorage* mStorage;
 	slam3d::G2oSolver* mSolver;
 	slam3d::PointCloudSensor* mPclSensor;
 	RosClock mClock;
