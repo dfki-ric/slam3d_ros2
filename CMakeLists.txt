@@ -29,11 +29,13 @@ target_include_directories(${PROJECT_NAME}
 		$<INSTALL_INTERFACE:include>
 )
 
+ament_target_dependencies(${PROJECT_NAME}
+	"rclcpp"
+	"visualization_msgs"
+)
+
 target_link_libraries(${PROJECT_NAME}
-	PUBLIC
-		slam3d::core
-		rclcpp::rclcpp
-		${visualization_msgs_TARGETS}
+	slam3d::core
 )
 
 install(
@@ -55,11 +57,16 @@ add_executable(pointcloud_mapper
 	src/pointcloud_mapper.cpp
 )
 
-target_link_libraries(pointcloud_mapper PUBLIC
-	rclcpp::rclcpp
-	tf2_ros::tf2_ros
-	${sensor_msgs_TARGETS}
-	${std_srvs_TARGETS}
+ament_target_dependencies(pointcloud_mapper
+	"rclcpp"
+	"tf2_ros"
+	"tf2_eigen"
+	"sensor_msgs"
+	"std_srvs"
+	"pcl_conversions"
+)
+
+target_link_libraries(pointcloud_mapper
 	${PCL_COMMON_LIBRARIES}
 	slam3d::solver-g2o
 	slam3d::graph-boost
