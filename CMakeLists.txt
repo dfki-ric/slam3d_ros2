@@ -17,6 +17,7 @@ find_package(PCL 1.7 REQUIRED COMPONENTS common)
 
 # Public library with generic ROS functions
 add_library(${PROJECT_NAME} SHARED
+	src/TfOdometry.cpp
 	src/RosClock.cpp
 	src/GraphPublisher.cpp
 #	src/GpsPublisher.cpp
@@ -31,6 +32,8 @@ target_include_directories(${PROJECT_NAME}
 
 ament_target_dependencies(${PROJECT_NAME}
 	"rclcpp"
+	"tf2_ros"
+	"tf2_eigen"
 	"visualization_msgs"
 )
 
@@ -59,8 +62,6 @@ add_executable(pointcloud_mapper
 
 ament_target_dependencies(pointcloud_mapper
 	"rclcpp"
-	"tf2_ros"
-	"tf2_eigen"
 	"sensor_msgs"
 	"std_srvs"
 	"pcl_conversions"

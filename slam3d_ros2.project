@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CodeLite_Project Name="slam3d_ros2" Version="11000" InternalType="">
   <VirtualDirectory Name="include">
+    <File Name="include/TfOdometry.hpp"/>
     <File Name="include/RosClock.hpp"/>
     <File Name="include/ros_tf.hpp"/>
     <File Name="include/ros_common.hpp"/>
@@ -10,6 +11,7 @@
     <File Name="include/GpsPublisher.hpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="src">
+    <File Name="src/TfOdometry.cpp"/>
     <File Name="src/RosClock.cpp"/>
     <File Name="src/ros_tf.cpp"/>
     <File Name="src/ros_common.cpp"/>
