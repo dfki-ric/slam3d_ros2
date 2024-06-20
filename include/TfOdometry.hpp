@@ -10,7 +10,8 @@ namespace slam3d
 	class TfOdometry : public PoseSensor
 	{
 	public:
-		TfOdometry(Graph* g, Logger* l, tf2_ros::Buffer* tf, const std::string& robot_f, const std::string& odom_f);
+		TfOdometry(Graph* g, Logger* l, tf2_ros::Buffer* tf, tf2::Duration timeout,
+			const std::string& robot_f, const std::string& odom_f);
 		
 		Transform getPose(timeval stamp);
 		
@@ -18,6 +19,7 @@ namespace slam3d
 		
 	private:
 		tf2_ros::Buffer* mTfBuffer;
+		tf2::Duration mTimeout;
 		Transform mLastOdometricPose;
 		IdType mLastVertex;
 		std::string mRobotFrame;

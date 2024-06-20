@@ -75,7 +75,7 @@ public:
 		mMapper = new Mapper(mGraph, mLogger, Transform::Identity());
 		mMapper->registerSensor(mPclSensor);
 		
-		mTfOdom = new TfOdometry(mGraph, mLogger, &mTfBuffer, mRobotFrame, mOdometryFrame);
+		mTfOdom = new TfOdometry(mGraph, mLogger, &mTfBuffer, TF_TIMEOUT, mRobotFrame, mOdometryFrame);
 		mMapper->registerPoseSensor(mTfOdom);
 		
 		mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
