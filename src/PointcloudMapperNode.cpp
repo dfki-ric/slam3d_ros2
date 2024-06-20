@@ -13,8 +13,8 @@ using namespace std::chrono_literals;
 
 #define TF_TIMEOUT 100ms
 
-PointcloudMapperNode::PointcloudMapperNode() : Node("pointcloud_mapper"), mClock(this->get_clock()),
-	mTfBuffer(this->get_clock()), mTfListener(mTfBuffer), mTfBroadcaster(this)
+PointcloudMapperNode::PointcloudMapperNode(const std::string& name) : Node(name),
+	mClock(this->get_clock()), mTfBuffer(this->get_clock()), mTfListener(mTfBuffer), mTfBroadcaster(this)
 {
 	declare_parameter("map_frame", "map");
 	declare_parameter("odometry_frame", "odometry");
@@ -115,6 +115,9 @@ void PointcloudMapperNode::scanCallback(const sensor_msgs::msg::PointCloud2::Sha
 			mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose() * odometry_pose.inverse()));
 			mDrift.header.frame_id = mMapFrame;
 			mDrift.child_frame_id = mOdometryFrame;
+
+			mGraphPublisher->publishNodes(msg->header.stamp, mMapFrame);
+			mGraphPublisher->publishEdges(mPclSensor->getName(), msg->header.stamp, mMapFrame);
 		}
 	}
 	catch(std::exception& e)
@@ -134,7 +137,4 @@ void PointcloudMapperNode::generateMap(const std::shared_ptr<std_srvs::srv::Empt
 	pc2_msg.header.frame_id = mMapFrame;
 	pc2_msg.header.stamp = mClock.ros_now();
 	mMapPublisher->publish(pc2_msg);
-	
-	mGraphPublisher->publishNodes(pc2_msg.header.stamp, pc2_msg.header.frame_id);
-	mGraphPublisher->publishEdges(mPclSensor->getName(), pc2_msg.header.stamp, pc2_msg.header.frame_id);
 }

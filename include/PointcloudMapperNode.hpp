@@ -9,18 +9,18 @@
 #include <slam3d/sensor/pcl/PointCloudSensor.hpp>
 #include <slam3d/core/Mapper.hpp>
 
-#include <RosClock.hpp>
-#include <GraphPublisher.hpp>
-#include <TfOdometry.hpp>
+#include "RosClock.hpp"
+#include "GraphPublisher.hpp"
+#include "TfOdometry.hpp"
 
 namespace slam3d
 {
 	class PointcloudMapperNode : public rclcpp::Node
 	{
 	public:
-		PointcloudMapperNode();
+		PointcloudMapperNode(const std::string& name);
 
-	private:
+	protected:
 
 		void timerCallback();
 
