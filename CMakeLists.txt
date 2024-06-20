@@ -20,6 +20,7 @@ add_library(${PROJECT_NAME} SHARED
 	src/TfOdometry.cpp
 	src/RosClock.cpp
 	src/GraphPublisher.cpp
+	src/PointcloudMapperNode.cpp
 #	src/GpsPublisher.cpp
 #	src/LoopCloser.cpp
 )
@@ -34,11 +35,17 @@ ament_target_dependencies(${PROJECT_NAME}
 	"rclcpp"
 	"tf2_ros"
 	"tf2_eigen"
+	"sensor_msgs"
 	"visualization_msgs"
+	"std_srvs"
+	"pcl_conversions"
 )
 
 target_link_libraries(${PROJECT_NAME}
-	slam3d::core
+	${PCL_COMMON_LIBRARIES}
+	slam3d::solver-g2o
+	slam3d::graph-boost
+	slam3d::sensor-pcl
 )
 
 install(
@@ -60,18 +67,7 @@ add_executable(pointcloud_mapper
 	src/pointcloud_mapper.cpp
 )
 
-ament_target_dependencies(pointcloud_mapper
-	"rclcpp"
-	"sensor_msgs"
-	"std_srvs"
-	"pcl_conversions"
-)
-
 target_link_libraries(pointcloud_mapper
-	${PCL_COMMON_LIBRARIES}
-	slam3d::solver-g2o
-	slam3d::graph-boost
-	slam3d::sensor-pcl
 	${PROJECT_NAME}
 )
 
