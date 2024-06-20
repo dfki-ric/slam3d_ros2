@@ -26,6 +26,11 @@ PointcloudMapperNode::PointcloudMapperNode() : Node("pointcloud_mapper"), mClock
 	declare_parameter("pose_translation", 0.5);
 	declare_parameter("pose_rotation", 0.5);
 
+	declare_parameter("neighbor_radius", 5.0);
+	declare_parameter("max_neighbor_links", 1);
+	declare_parameter("patch_building_range", 0);
+	declare_parameter("min_loop_length", 10);
+
 	mLogger = new Logger(mClock);
 	mLogger->setLogLevel(DEBUG);
 
@@ -45,7 +50,9 @@ PointcloudMapperNode::PointcloudMapperNode() : Node("pointcloud_mapper"), mClock
 
 	mPclSensor->setMapResolution(get_parameter("map_resolution").as_double());
 	mPclSensor->setRegistrationParameters(regParams, false);
-	mPclSensor->setNeighborRadius(5.0, 1);
+	mPclSensor->setNeighborRadius(get_parameter("neighbor_radius").as_double(), get_parameter("max_neighbor_links").as_int());
+	mPclSensor->setPatchBuildingRange(get_parameter("patch_building_range").as_int());
+	mPclSensor->setMinLoopLength(get_parameter("min_loop_length").as_int());
 	mPclSensor->setLinkPrevious(true);
 	
 	mMapFrame = get_parameter("map_frame").as_string();
@@ -104,6 +111,7 @@ void PointcloudMapperNode::scanCallback(const sensor_msgs::msg::PointCloud2::Sha
 		
 		if(mPclSensor->addMeasurement(m, odometry_pose))
 		{
+			mPclSensor->linkLastToNeighbors();
 			mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose() * odometry_pose.inverse()));
 			mDrift.header.frame_id = mMapFrame;
 			mDrift.child_frame_id = mOdometryFrame;
