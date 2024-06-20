@@ -11,7 +11,7 @@
 using namespace slam3d;
 using namespace std::chrono_literals;
 
-#define TF_TIMEOUT 100ms
+#define TF_TIMEOUT 500ms
 
 PointcloudMapperNode::PointcloudMapperNode(const std::string& name) : Node(name),
 	mClock(this->get_clock()), mTfBuffer(this->get_clock()), mTfListener(mTfBuffer), mTfBroadcaster(this)
