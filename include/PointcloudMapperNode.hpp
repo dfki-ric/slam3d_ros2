@@ -10,6 +10,7 @@
 #include <slam3d/core/Mapper.hpp>
 
 #include "RosClock.hpp"
+#include "RosLogger.hpp"
 #include "GraphPublisher.hpp"
 #include "TfOdometry.hpp"
 
@@ -35,7 +36,7 @@ namespace slam3d
 		G2oSolver* mSolver;
 		PointCloudSensor* mPclSensor;
 		RosClock mClock;
-		Logger* mLogger;
+		RosLogger* mLogger;
 		TfOdometry* mTfOdom;
 		
 		GraphPublisher* mGraphPublisher;

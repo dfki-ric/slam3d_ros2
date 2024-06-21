@@ -1,3 +1,5 @@
+#pragma once
+
 #include <slam3d/core/Clock.hpp>
 #include <rclcpp/rclcpp.hpp>
 

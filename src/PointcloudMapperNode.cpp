@@ -31,7 +31,7 @@ PointcloudMapperNode::PointcloudMapperNode(const std::string& name) : Node(name)
 	declare_parameter("patch_building_range", 0);
 	declare_parameter("min_loop_length", 10);
 
-	mLogger = new Logger(mClock);
+	mLogger = new RosLogger(mClock, get_logger());
 	mLogger->setLogLevel(DEBUG);
 
 	mStorage = new MeasurementStorage();
