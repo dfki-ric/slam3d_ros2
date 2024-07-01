@@ -77,8 +77,8 @@ PointcloudMapperNode::PointcloudMapperNode(const std::string& name) : Node(name)
 	
 	mMapPublisher = create_publisher<sensor_msgs::msg::PointCloud2>("map", 10);
 	
-	mGenerateMapService = create_service<std_srvs::srv::Empty>("generate_map",
-		std::bind(&PointcloudMapperNode::generateMap, this, std::placeholders::_1, std::placeholders::_2));
+	mGenerateCloudService = create_service<std_srvs::srv::Empty>("generate_cloud",
+		std::bind(&PointcloudMapperNode::generateCloud, this, std::placeholders::_1, std::placeholders::_2));
 
 	mGraphPublisher = new GraphPublisher(this, mGraph);
 	mGraphPublisher->addNodeSensor(mPclSensor->getName(), 0,1,0);
@@ -126,8 +126,8 @@ void PointcloudMapperNode::scanCallback(const sensor_msgs::msg::PointCloud2::Sha
 	}
 }
 
-void PointcloudMapperNode::generateMap(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-	                                     std::shared_ptr<std_srvs::srv::Empty::Response> response)
+void PointcloudMapperNode::generateCloud(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+                                               std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
 	mGraph->optimize();
 	VertexObjectList vertices = mGraph->getVerticesFromSensor(mPclSensor->getName());

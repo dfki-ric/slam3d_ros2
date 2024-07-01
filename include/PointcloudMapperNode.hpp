@@ -27,8 +27,8 @@ namespace slam3d
 
 		void scanCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
-		void generateMap(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-							   std::shared_ptr<std_srvs::srv::Empty::Response> response);
+		void generateCloud(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+                                 std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
 		Mapper* mMapper;
 		BoostGraph* mGraph;
@@ -47,7 +47,7 @@ namespace slam3d
 		
 		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mMapPublisher;
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mScanSubscriber;
-		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mGenerateMapService;
+		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mGenerateCloudService;
 		rclcpp::TimerBase::SharedPtr mTransformTimer;
 		
 		tf2_ros::Buffer mTfBuffer;
