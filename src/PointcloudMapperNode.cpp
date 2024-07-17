@@ -42,6 +42,7 @@ PointcloudMapperNode::PointcloudMapperNode(const std::string& name) : Node(name)
 	mDrift.child_frame_id = mOdometryFrame;
 	
 	mGraph->setSolver(mSolver);
+	mGraph->fixNext();
 	
 	mMapper = new Mapper(mGraph, mLogger, Transform::Identity());
 	mMapper->registerSensor(mPclSensor);
