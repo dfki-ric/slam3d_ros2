@@ -5,6 +5,7 @@
     <File Name="node/CMakeLists.txt"/>
   </VirtualDirectory>
   <VirtualDirectory Name="include">
+    <File Name="include/RosPclSensor.hpp"/>
     <File Name="include/RosLogger.hpp"/>
     <File Name="include/PointcloudMapperNode.hpp"/>
     <File Name="include/TfOdometry.hpp"/>

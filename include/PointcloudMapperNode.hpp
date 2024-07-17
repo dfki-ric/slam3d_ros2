@@ -3,12 +3,12 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
-
 #include <slam3d/graph/boost/BoostGraph.hpp>
 #include <slam3d/solver/g2o/G2oSolver.hpp>
-#include <slam3d/sensor/pcl/PointCloudSensor.hpp>
+
 #include <slam3d/core/Mapper.hpp>
 
+#include "RosPclSensor.hpp"
 #include "RosClock.hpp"
 #include "RosLogger.hpp"
 #include "GraphPublisher.hpp"
@@ -30,17 +30,19 @@ namespace slam3d
 		void generateCloud(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
                                  std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
+		Logger* mLogger;
 		Mapper* mMapper;
 		BoostGraph* mGraph;
 		MeasurementStorage* mStorage;
 		G2oSolver* mSolver;
-		PointCloudSensor* mPclSensor;
+		RosPclSensor* mPclSensor;
 		RosClock mClock;
-		RosLogger* mLogger;
 		TfOdometry* mTfOdom;
 		
 		GraphPublisher* mGraphPublisher;
 		
+		std::string mRobotName;
+		std::string mLaserName;
 		std::string mMapFrame;
 		std::string mOdometryFrame;
 		std::string mRobotFrame;
