@@ -1,4 +1,4 @@
-#include "PointcloudMapperNode.hpp"
+#include "PointcloudMapper.hpp"
 
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <pcl_conversions/pcl_conversions.h>
@@ -7,13 +7,14 @@
 #include <memory>
 #include <string>
 
+#include <rclcpp_components/register_node_macro.hpp>
 
 using namespace slam3d;
 using namespace std::chrono_literals;
 
 #define TF_TIMEOUT 500ms
 
-PointcloudMapperNode::PointcloudMapperNode(const std::string& name) : Node(name),
+PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options) : Node("pointcloud_mapper", options),
 	mClock(this->get_clock()), mTfBuffer(this->get_clock()), mTfListener(mTfBuffer), mTfBroadcaster(this)
 {
 	declare_parameter("robot_name", "robot");
@@ -51,14 +52,14 @@ PointcloudMapperNode::PointcloudMapperNode(const std::string& name) : Node(name)
 	mMapper->registerPoseSensor(mTfOdom);
 	
 	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
-		std::bind(&PointcloudMapperNode::scanCallback, this, std::placeholders::_1));
+		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
 	
-	mTransformTimer = create_wall_timer(100ms, std::bind(&PointcloudMapperNode::timerCallback, this));
+	mTransformTimer = create_wall_timer(100ms, std::bind(&PointcloudMapper::timerCallback, this));
 	
 	mMapPublisher = create_publisher<sensor_msgs::msg::PointCloud2>("map", 10);
 	
 	mGenerateCloudService = create_service<std_srvs::srv::Empty>("generate_cloud",
-		std::bind(&PointcloudMapperNode::generateCloud, this, std::placeholders::_1, std::placeholders::_2));
+		std::bind(&PointcloudMapper::generateCloud, this, std::placeholders::_1, std::placeholders::_2));
 
 	mGraphPublisher = new GraphPublisher(this, mGraph);
 	mGraphPublisher->addNodeSensor(mPclSensor->getName(), 0,1,0);
@@ -66,13 +67,13 @@ PointcloudMapperNode::PointcloudMapperNode(const std::string& name) : Node(name)
 }
 
 
-void PointcloudMapperNode::timerCallback()
+void PointcloudMapper::timerCallback()
 {
 	mDrift.header.stamp = mClock.ros_now();
 	mTfBroadcaster.sendTransform(mDrift);
 }
 
-void PointcloudMapperNode::scanCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
 	try
 	{
@@ -105,7 +106,7 @@ void PointcloudMapperNode::scanCallback(const sensor_msgs::msg::PointCloud2::Sha
 	}
 }
 
-void PointcloudMapperNode::generateCloud(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+void PointcloudMapper::generateCloud(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
                                                std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
 	mGraph->optimize();
@@ -117,3 +118,8 @@ void PointcloudMapperNode::generateCloud(const std::shared_ptr<std_srvs::srv::Em
 	pc2_msg.header.stamp = mClock.ros_now();
 	mMapPublisher->publish(pc2_msg);
 }
+
+// Register the component with class_loader.
+// This acts as a sort of entry point, allowing the component to be discoverable when its library
+// is being loaded into a running process.
+RCLCPP_COMPONENTS_REGISTER_NODE(slam3d::PointcloudMapper)

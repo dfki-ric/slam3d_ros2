@@ -3,7 +3,7 @@ add_library(${PROJECT_NAME} SHARED
 	TfOdometry.cpp
 	RosClock.cpp
 	GraphPublisher.cpp
-	PointcloudMapperNode.cpp
+	PointcloudMapper.cpp
 #	GpsPublisher.cpp
 #	LoopCloser.cpp
 )
@@ -16,12 +16,18 @@ target_include_directories(${PROJECT_NAME}
 
 ament_target_dependencies(${PROJECT_NAME}
 	"rclcpp"
+	"rclcpp_components"
 	"tf2_ros"
 	"tf2_eigen"
 	"sensor_msgs"
 	"visualization_msgs"
 	"std_srvs"
 	"pcl_conversions"
+)
+
+rclcpp_components_register_node(${PROJECT_NAME}
+    PLUGIN "slam3d::PointcloudMapper"
+    EXECUTABLE pointcloud_mapper
 )
 
 target_link_libraries(${PROJECT_NAME}

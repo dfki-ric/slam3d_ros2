@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CodeLite_Project Name="slam3d_ros2" Version="11000" InternalType="">
-  <VirtualDirectory Name="node">
-    <File Name="node/pointcloud_mapper.cpp"/>
-    <File Name="node/CMakeLists.txt"/>
-  </VirtualDirectory>
+  <VirtualDirectory Name="node"/>
   <VirtualDirectory Name="include">
+    <File Name="include/PointcloudMapper.hpp"/>
     <File Name="include/RosPclSensor.hpp"/>
     <File Name="include/RosLogger.hpp"/>
-    <File Name="include/PointcloudMapperNode.hpp"/>
     <File Name="include/TfOdometry.hpp"/>
     <File Name="include/RosClock.hpp"/>
     <File Name="include/LoopCloser.hpp"/>
@@ -15,8 +12,8 @@
     <File Name="include/GpsPublisher.hpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="src">
+    <File Name="src/PointcloudMapper.cpp"/>
     <File Name="src/CMakeLists.txt"/>
-    <File Name="src/PointcloudMapperNode.cpp"/>
     <File Name="src/TfOdometry.cpp"/>
     <File Name="src/RosClock.cpp"/>
     <File Name="src/LoopCloser.cpp"/>

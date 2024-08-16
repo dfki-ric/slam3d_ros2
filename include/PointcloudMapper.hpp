@@ -3,10 +3,10 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
-#include <slam3d/graph/boost/BoostGraph.hpp>
-#include <slam3d/solver/g2o/G2oSolver.hpp>
 
 #include <slam3d/core/Mapper.hpp>
+#include <slam3d/graph/boost/BoostGraph.hpp>
+#include <slam3d/solver/g2o/G2oSolver.hpp>
 
 #include "RosPclSensor.hpp"
 #include "RosClock.hpp"
@@ -16,10 +16,10 @@
 
 namespace slam3d
 {
-	class PointcloudMapperNode : public rclcpp::Node
+	class PointcloudMapper : public rclcpp::Node
 	{
 	public:
-		PointcloudMapperNode(const std::string& name);
+		PointcloudMapper(const rclcpp::NodeOptions & options);
 
 	protected:
 
