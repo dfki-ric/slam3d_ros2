@@ -14,7 +14,8 @@ using namespace std::chrono_literals;
 
 #define TF_TIMEOUT 500ms
 
-PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options) : Node("pointcloud_mapper", options),
+PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const std::string& name)
+:	Node(name, options),
 	mClock(this->get_clock()), mTfBuffer(this->get_clock()), mTfListener(mTfBuffer), mTfBroadcaster(this)
 {
 	declare_parameter("robot_name", "robot");

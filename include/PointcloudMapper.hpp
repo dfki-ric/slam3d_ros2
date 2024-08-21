@@ -19,7 +19,7 @@ namespace slam3d
 	class PointcloudMapper : public rclcpp::Node
 	{
 	public:
-		PointcloudMapper(const rclcpp::NodeOptions & options);
+		PointcloudMapper(const rclcpp::NodeOptions & options, const std::string& name = "pointcloud_mapper");
 
 	protected:
 
