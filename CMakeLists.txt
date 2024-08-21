@@ -30,6 +30,7 @@ target_include_directories(${PROJECT_NAME}
 )
 
 set(AMENT_DEPS
+	"slam3d"
 	"rclcpp"
 	"rclcpp_components"
 	"tf2_ros"
