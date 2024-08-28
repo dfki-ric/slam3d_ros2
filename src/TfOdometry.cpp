@@ -1,7 +1,7 @@
 #include <TfOdometry.hpp>
 #include <RosClock.hpp>
 
-#include <tf2_eigen/tf2_eigen.hpp>
+#include <tf2_eigen/tf2_eigen.h>
 
 using namespace slam3d;
 
