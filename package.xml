@@ -20,6 +20,7 @@
 	<depend>tf2_eigen</depend>
 	<depend>pcl_conversions</depend>
 	<depend>slam3d</depend>
+	<depend>visualization_msgs</depend>
 
 	<export>
 		<build_type>ament_cmake</build_type>
