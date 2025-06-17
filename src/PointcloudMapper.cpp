@@ -25,6 +25,9 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("robot_frame", "robot");
 	declare_parameter("laser_frame", "laser");
 	declare_parameter("use_odometry", true);
+	declare_parameter("map_cloud_resolution", 0.1);
+	declare_parameter("min_translation", 0.1);
+	declare_parameter("min_rotation", 0.1);
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -40,6 +43,8 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mGraph = new BoostGraph(mLogger, mStorage);
 	mSolver = new G2oSolver(mLogger);
 	mPclSensor = new RosPclSensor(mLaserName, mLogger, this);
+	mPclSensor->setMapResolution(get_parameter("map_cloud_resolution").as_double());
+	mPclSensor->setMinPoseDistance(get_parameter("min_translation").as_double(), get_parameter("min_rotation").as_double());
 	
 	mGraph->setSolver(mSolver);
 	mGraph->fixNext();
