@@ -24,6 +24,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("odometry_frame", "odometry");
 	declare_parameter("robot_frame", "robot");
 	declare_parameter("laser_frame", "laser");
+	declare_parameter("use_odometry", true);
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -39,9 +40,6 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mGraph = new BoostGraph(mLogger, mStorage);
 	mSolver = new G2oSolver(mLogger);
 	mPclSensor = new RosPclSensor(mLaserName, mLogger, this);
-
-	mDrift.header.frame_id = mMapFrame;
-	mDrift.child_frame_id = mOdometryFrame;
 	
 	mGraph->setSolver(mSolver);
 	mGraph->fixNext();
@@ -49,9 +47,18 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mMapper = new Mapper(mGraph, mLogger, Transform::Identity());
 	mMapper->registerSensor(mPclSensor);
 	
-	mTfOdom = new TfOdometry(mGraph, mLogger, &mTfBuffer, TF_TIMEOUT, mRobotFrame, mOdometryFrame);
-	mMapper->registerPoseSensor(mTfOdom);
-	
+	if(get_parameter("use_odometry").as_bool())
+	{
+		mTfOdom = new TfOdometry(mGraph, mLogger, &mTfBuffer, TF_TIMEOUT, mRobotFrame, mOdometryFrame);
+		mMapper->registerPoseSensor(mTfOdom);
+		mDrift.header.frame_id = mMapFrame;
+		mDrift.child_frame_id = mOdometryFrame;
+	}else
+	{
+		mTfOdom = nullptr;
+		mDrift.header.frame_id = mMapFrame;
+		mDrift.child_frame_id = mRobotFrame;
+	}
 	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
 		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
 	
@@ -84,19 +91,30 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 		Transform laser_pose = tf2::transformToEigen(
 			mTfBuffer.lookupTransform(mRobotFrame, msg->header.frame_id, msg->header.stamp, TF_TIMEOUT));
 
-		Transform odometry_pose = tf2::transformToEigen(
-			mTfBuffer.lookupTransform(mOdometryFrame, mRobotFrame, msg->header.stamp, TF_TIMEOUT));
-
 		PointCloud::Ptr scan = mPclSensor->downsampleScan(pc);
 		PointCloudMeasurement::Ptr m(new PointCloudMeasurement(scan, mRobotName, mPclSensor->getName(), laser_pose));
-		
-		if(mPclSensor->addMeasurement(m, odometry_pose))
+
+		bool added = false;
+		if(mTfOdom)
 		{
-			mPclSensor->linkLastToNeighbors();
+			Transform odometry_pose = tf2::transformToEigen(
+				mTfBuffer.lookupTransform(mOdometryFrame, mRobotFrame, msg->header.stamp, TF_TIMEOUT));
+
+			added = mPclSensor->addMeasurement(m, odometry_pose);
 			mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose() * odometry_pose.inverse()));
 			mDrift.header.frame_id = mMapFrame;
 			mDrift.child_frame_id = mOdometryFrame;
+		}else
+		{
+			added = mPclSensor->addMeasurement(m);
+			mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose()));
+			mDrift.header.frame_id = mMapFrame;
+			mDrift.child_frame_id = mRobotFrame;
+		}
 
+		if(added)
+		{
+			mPclSensor->linkLastToNeighbors();
 			mGraphPublisher->publishNodes(msg->header.stamp, mMapFrame);
 			mGraphPublisher->publishEdges(mPclSensor->getName(), msg->header.stamp, mMapFrame);
 		}
