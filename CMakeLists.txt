@@ -19,6 +19,7 @@ add_library(${PROJECT_NAME} SHARED
 	src/RosClock.cpp
 	src/GraphPublisher.cpp
 	src/PointcloudMapper.cpp
+	src/PlyLoader.cpp
 #	src/GpsPublisher.cpp
 #	src/LoopCloser.cpp
 )
@@ -41,6 +42,11 @@ set(AMENT_DEPS
 	"pcl_conversions"
 )
 ament_target_dependencies(${PROJECT_NAME} ${AMENT_DEPS})
+
+rclcpp_components_register_node(${PROJECT_NAME}
+    PLUGIN "slam3d::PlyLoader"
+    EXECUTABLE ply_loader
+)
 
 rclcpp_components_register_node(${PROJECT_NAME}
     PLUGIN "slam3d::PointcloudMapper"
