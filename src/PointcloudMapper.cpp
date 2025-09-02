@@ -67,7 +67,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
 		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
 	
-	mTransformTimer = create_wall_timer(100ms, std::bind(&PointcloudMapper::timerCallback, this));
+	mTransformTimer = rclcpp::create_timer(this, this->get_clock(), 100ms, std::bind(&PointcloudMapper::timerCallback, this));
 	
 	mMapPublisher = create_publisher<sensor_msgs::msg::PointCloud2>("map", 10);
 	
