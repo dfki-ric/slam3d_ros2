@@ -28,6 +28,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("map_cloud_resolution", 0.1);
 	declare_parameter("min_translation", 0.1);
 	declare_parameter("min_rotation", 0.1);
+	declare_parameter("automatic_optimize", false);
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -122,6 +123,10 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 			mPclSensor->linkLastToNeighbors();
 			mGraphPublisher->publishNodes(msg->header.stamp, mMapFrame);
 			mGraphPublisher->publishEdges(mPclSensor->getName(), msg->header.stamp, mMapFrame);
+			if(get_parameter("automatic_optimize").as_bool())
+			{
+				mGraph->optimize();
+			}
 		}
 	}
 	catch(std::exception& e)
