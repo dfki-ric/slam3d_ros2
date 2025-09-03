@@ -56,5 +56,7 @@ namespace slam3d
 		tf2_ros::TransformListener mTfListener;
 		tf2_ros::TransformBroadcaster mTfBroadcaster;
 		geometry_msgs::msg::TransformStamped mDrift;
+
+		bool mIsOriginInitialized = false;
 	};
 }

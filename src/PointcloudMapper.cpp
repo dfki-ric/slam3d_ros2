@@ -29,6 +29,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("min_translation", 0.1);
 	declare_parameter("min_rotation", 0.1);
 	declare_parameter("automatic_optimize", false);
+	declare_parameter("use_odometry_origin", false);
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -105,7 +106,11 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 		{
 			Transform odometry_pose = tf2::transformToEigen(
 				mTfBuffer.lookupTransform(mOdometryFrame, mRobotFrame, msg->header.stamp, TF_TIMEOUT));
-
+			if(!mIsOriginInitialized and get_parameter("use_odometry_origin").as_bool())
+			{
+				mMapper->setStartPose(odometry_pose);
+				mIsOriginInitialized = true;
+			}
 			added = mPclSensor->addMeasurement(m, odometry_pose);
 			mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose() * odometry_pose.inverse()));
 			mDrift.header.frame_id = mMapFrame;
