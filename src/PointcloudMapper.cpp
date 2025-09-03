@@ -69,7 +69,8 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
 		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
 	
-	mTransformTimer = rclcpp::create_timer(this, this->get_clock(), 100ms, std::bind(&PointcloudMapper::timerCallback, this));
+	mTfCallbackGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+	mTransformTimer = rclcpp::create_timer(this, this->get_clock(), 100ms, std::bind(&PointcloudMapper::timerCallback, this), mTfCallbackGroup);
 	
 	mMapPublisher = create_publisher<sensor_msgs::msg::PointCloud2>("map", 10);
 	
@@ -84,6 +85,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 
 void PointcloudMapper::timerCallback()
 {
+	std::unique_lock<std::mutex> lock(mMutex);
 	mDrift.header.stamp = mClock.ros_now();
 	mTfBroadcaster.sendTransform(mDrift);
 }
@@ -112,15 +114,21 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 				mIsOriginInitialized = true;
 			}
 			added = mPclSensor->addMeasurement(m, odometry_pose);
-			mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose() * odometry_pose.inverse()));
-			mDrift.header.frame_id = mMapFrame;
-			mDrift.child_frame_id = mOdometryFrame;
+			{
+				std::unique_lock<std::mutex> lock(mMutex);
+				mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose() * odometry_pose.inverse()));
+				mDrift.header.frame_id = mMapFrame;
+				mDrift.child_frame_id = mOdometryFrame;
+			}
 		}else
 		{
 			added = mPclSensor->addMeasurement(m);
-			mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose()));
-			mDrift.header.frame_id = mMapFrame;
-			mDrift.child_frame_id = mRobotFrame;
+			{
+				std::unique_lock<std::mutex> lock(mMutex);
+				mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose()));
+				mDrift.header.frame_id = mMapFrame;
+				mDrift.child_frame_id = mRobotFrame;
+			}
 		}
 
 		if(added)
