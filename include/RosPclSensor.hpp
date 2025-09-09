@@ -68,10 +68,10 @@ namespace slam3d
 		{
 			node->declare_parameter(name+".scan_resolution", 0.1);
 			node->declare_parameter(name+".map_resolution", 0.1);
-			node->declare_parameter(name+".outlier_radius", 0.1);
-			node->declare_parameter(name+".map_resolution", 0.1);
 			node->declare_parameter(name+".map_outlier_radius", 0.2);
 			node->declare_parameter(name+".map_outlier_neighbors", 3);
+			node->declare_parameter(name+".pose_translation", 0.5);
+			node->declare_parameter(name+".pose_rotation", 0.5);
 			node->declare_parameter(name+".neighbor_radius", 5.0);
 			node->declare_parameter(name+".max_neighbor_links", 1);
 			node->declare_parameter(name+".patch_building_range", 0);
