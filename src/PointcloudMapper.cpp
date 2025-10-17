@@ -22,8 +22,10 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("laser_name", "laser");
 	declare_parameter("map_frame", "map");
 	declare_parameter("odometry_frame", "odometry");
+	declare_parameter("gravity_frame", "gravity");
 	declare_parameter("robot_frame", "robot");
 	declare_parameter("use_odometry", true);
+	declare_parameter("use_gravity", false);
 	declare_parameter("automatic_optimize", false);
 	declare_parameter("use_odometry_origin", false);
 
@@ -32,6 +34,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mMapFrame = get_parameter("map_frame").as_string();
 	mOdometryFrame = get_parameter("odometry_frame").as_string();
 	mRobotFrame = get_parameter("robot_frame").as_string();
+	mGravityFrame = get_parameter("gravity_frame").as_string();
 
 //	mLogger = new RosLogger(mClock, get_logger());
 	mLogger = new Logger(mClock);
@@ -60,6 +63,16 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 		mDrift.header.frame_id = mMapFrame;
 		mDrift.child_frame_id = mRobotFrame;
 	}
+
+	if(get_parameter("use_gravity").as_bool())
+	{
+		mTfGrav = new TfGravity(mGraph, mLogger, &mTfBuffer, TF_TIMEOUT, mRobotFrame, mGravityFrame, Direction::UnitZ());
+		mMapper->registerPoseSensor(mTfGrav);
+	}else
+	{
+		mTfGrav = nullptr;
+	}
+
 	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
 		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
 	

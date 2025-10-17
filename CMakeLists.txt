@@ -16,6 +16,7 @@ find_package(std_srvs REQUIRED)
 # Public library with generic ROS functions
 add_library(${PROJECT_NAME} SHARED
 	src/TfOdometry.cpp
+	src/TfGravity.cpp
 	src/RosClock.cpp
 	src/GraphPublisher.cpp
 	src/PointcloudMapper.cpp

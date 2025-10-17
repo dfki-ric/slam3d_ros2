@@ -13,6 +13,7 @@
 #include "RosLogger.hpp"
 #include "GraphPublisher.hpp"
 #include "TfOdometry.hpp"
+#include "TfGravity.hpp"
 
 namespace slam3d
 {
@@ -38,6 +39,7 @@ namespace slam3d
 		RosPclSensor* mPclSensor;
 		RosClock mClock;
 		TfOdometry* mTfOdom;
+		TfGravity* mTfGrav;
 		
 		GraphPublisher* mGraphPublisher;
 		
@@ -45,6 +47,7 @@ namespace slam3d
 		std::string mLaserName;
 		std::string mMapFrame;
 		std::string mOdometryFrame;
+		std::string mGravityFrame;
 		std::string mRobotFrame;
 		
 		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mMapPublisher;
