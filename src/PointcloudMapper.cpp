@@ -1,8 +1,8 @@
 #include "PointcloudMapper.hpp"
+#include "RosLogger.hpp"
 
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <pcl_conversions/pcl_conversions.h>
-#include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
@@ -36,8 +36,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mRobotFrame = get_parameter("robot_frame").as_string();
 	mGravityFrame = get_parameter("gravity_frame").as_string();
 
-//	mLogger = new RosLogger(mClock, get_logger());
-	mLogger = new Logger(mClock);
+	mLogger = new RosLogger(mClock, get_logger());
 	mLogger->setLogLevel(DEBUG);
 
 	mStorage = new MeasurementStorage();

@@ -10,7 +10,6 @@
 
 #include "RosPclSensor.hpp"
 #include "RosClock.hpp"
-#include "RosLogger.hpp"
 #include "GraphPublisher.hpp"
 #include "TfOdometry.hpp"
 #include "TfGravity.hpp"
