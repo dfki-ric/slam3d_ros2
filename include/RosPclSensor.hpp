@@ -106,6 +106,7 @@ namespace slam3d
 				node->get_parameter(name+".link_previous").as_bool());
 
 			setRegistrationParameters(declareRegistrationParams(node, name+".registration"), false);
+			setRegistrationParameters(declareRegistrationParams(node, name+".coarse_registration"), true);
 		}
 	};
 }
