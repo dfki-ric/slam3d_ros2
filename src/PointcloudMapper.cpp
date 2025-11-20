@@ -3,6 +3,7 @@
 
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/filters/filter_indices.h>
 #include <functional>
 #include <memory>
 #include <string>
@@ -106,6 +107,8 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 		Transform laser_pose = tf2::transformToEigen(
 			mTfBuffer.lookupTransform(mRobotFrame, msg->header.frame_id, msg->header.stamp, TF_TIMEOUT));
 
+		pcl::Indices indices;
+		pcl::removeNaNFromPointCloud(*pc, *pc, indices);
 		PointCloud::Ptr scan = mPclSensor->downsampleScan(pc);
 		PointCloudMeasurement::Ptr m(new PointCloudMeasurement(scan, mRobotName, mPclSensor->getName(), laser_pose));
 
