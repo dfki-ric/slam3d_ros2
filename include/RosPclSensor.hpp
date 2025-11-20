@@ -19,6 +19,12 @@ namespace slam3d
 		params.max_fitness_score =
 			node->declare_parameter(name+".max_fitness_score", params.max_fitness_score);
 
+		params.max_translation =
+			node->declare_parameter(name+".max_translation", params.max_translation);
+
+		params.max_rotation =
+			node->declare_parameter(name+".max_rotation", params.max_rotation);
+
 		params.maximum_iterations =
 			node->declare_parameter(name+".maximum_iterations", params.maximum_iterations);
 
