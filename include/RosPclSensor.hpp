@@ -42,6 +42,8 @@ namespace slam3d
 			params.registration_algorithm = ICP;
 		else if(registration_algorithm == "GICP")
 			params.registration_algorithm = GICP;
+		else if(registration_algorithm == "C_GICP")
+			params.registration_algorithm = C_GICP;
 		else if(registration_algorithm == "GICP_OMP")
 			params.registration_algorithm = GICP_OMP;
 		else if(registration_algorithm == "NDT")
