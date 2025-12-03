@@ -4,9 +4,11 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/filters/filter_indices.h>
+#include <pcl/io/ply_io.h>
 #include <functional>
 #include <memory>
 #include <string>
+#include <time.h>
 
 #include <rclcpp_components/register_node_macro.hpp>
 
@@ -29,6 +31,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("use_gravity", false);
 	declare_parameter("automatic_optimize", false);
 	declare_parameter("use_odometry_origin", false);
+	declare_parameter("initial_map", "");
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -44,13 +47,13 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mGraph = new BoostGraph(mLogger, mStorage);
 	mSolver = new G2oSolver(mLogger);
 	mPclSensor = new RosPclSensor(mLaserName, mLogger, this);
-	
+
 	mGraph->setSolver(mSolver);
-	mGraph->fixNext();
-	
+
 	mMapper = new Mapper(mGraph, mLogger, Transform::Identity());
 	mMapper->registerSensor(mPclSensor);
-	
+	mMapper->fixFirst();
+
 	if(get_parameter("use_odometry").as_bool())
 	{
 		mTfOdom = new TfOdometry(mGraph, mLogger, &mTfBuffer, TF_TIMEOUT, mRobotFrame, mOdometryFrame);
@@ -71,6 +74,13 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	}else
 	{
 		mTfGrav = nullptr;
+	}
+
+	const std::string path = get_parameter("initial_map").as_string();
+	std::cout << "Path: " << path << std::endl;
+	if(!path.empty())
+	{
+		mPclSensor->loadPLY(path, mRobotName);
 	}
 
 	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
@@ -168,6 +178,16 @@ void PointcloudMapper::generateCloud(const std::shared_ptr<std_srvs::srv::Empty:
 	pc2_msg.header.frame_id = mMapFrame;
 	pc2_msg.header.stamp = mClock.ros_now();
 	mMapPublisher->publish(pc2_msg);
+
+	std::ostringstream ply_path;
+	time_t sec = mClock.now().tv_sec;
+	ply_path << "pointcloud-" << std::put_time(std::localtime(&sec), "%Y%m%d-%H%M") << ".ply";
+ 
+	pcl::PLYWriter ply_writer;
+	if(ply_writer.write(ply_path.str(), *map) != 0)
+	{
+		mLogger->message(ERROR, "Failed to write PLY.");
+	}
 }
 
 // Register the component with class_loader.
