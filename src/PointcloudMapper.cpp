@@ -30,6 +30,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("use_odometry", true);
 	declare_parameter("use_gravity", false);
 	declare_parameter("automatic_optimize", false);
+	declare_parameter("optimization_rate", 20);
 	declare_parameter("use_odometry_origin", false);
 	declare_parameter("initial_map", "");
 
@@ -39,6 +40,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mOdometryFrame = get_parameter("odometry_frame").as_string();
 	mRobotFrame = get_parameter("robot_frame").as_string();
 	mGravityFrame = get_parameter("gravity_frame").as_string();
+	mOptimizationRate = get_parameter("optimization_rate").as_int();
 
 	mLogger = new RosLogger(mClock, get_logger());
 	mLogger->setLogLevel(DEBUG);
@@ -155,7 +157,7 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 			mPclSensor->linkLastToNeighbors();
 			mGraphPublisher->publishNodes(msg->header.stamp, mMapFrame);
 			mGraphPublisher->publishEdges(mPclSensor->getName(), msg->header.stamp, mMapFrame);
-			if(get_parameter("automatic_optimize").as_bool())
+			if(get_parameter("automatic_optimize").as_bool() and mGraph->getNumOfNewConstraints() >= mOptimizationRate)
 			{
 				mGraph->optimize();
 			}

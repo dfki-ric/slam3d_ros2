@@ -48,6 +48,7 @@ namespace slam3d
 		std::string mOdometryFrame;
 		std::string mGravityFrame;
 		std::string mRobotFrame;
+		int mOptimizationRate;
 		
 		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mMapPublisher;
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mScanSubscriber;
