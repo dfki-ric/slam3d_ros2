@@ -3,6 +3,7 @@ project(slam3d_ros2)
 
 # find dependencies
 find_package(slam3d 3 REQUIRED)
+find_package(slam3d_octomap REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
@@ -33,6 +34,7 @@ target_include_directories(${PROJECT_NAME}
 
 set(AMENT_DEPS
 	"slam3d"
+	"slam3d_octomap"
 	"rclcpp"
 	"rclcpp_components"
 	"tf2_ros"
@@ -59,6 +61,7 @@ target_link_libraries(${PROJECT_NAME}
 	slam3d::solver-g2o
 	slam3d::graph-boost
 	slam3d::sensor-pcl
+	slam3d::octomap
 )
 
 install(

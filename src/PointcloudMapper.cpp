@@ -42,6 +42,23 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mGravityFrame = get_parameter("gravity_frame").as_string();
 	mOptimizationRate = get_parameter("optimization_rate").as_int();
 
+	OctoMapConfiguration octoMapConfig;
+	declare_parameter("octomap_clamping_thres_max", octoMapConfig.clampingThresMax);
+	declare_parameter("octomap_clamping_thres_min", octoMapConfig.clampingThresMin);
+	declare_parameter("octomap_occupancy_thres", octoMapConfig.occupancyThres);
+	declare_parameter("octomap_prob_hit", octoMapConfig.probHit);
+	declare_parameter("octomap_prob_miss", octoMapConfig.probMiss);
+	declare_parameter("octomap_range_max", octoMapConfig.rangeMax);
+	declare_parameter("octomap_resolution", octoMapConfig.resolution);
+
+	octoMapConfig.clampingThresMax = get_parameter("octomap_clamping_thres_max").as_double();
+	octoMapConfig.clampingThresMin = get_parameter("octomap_clamping_thres_min").as_double();
+	octoMapConfig.occupancyThres = get_parameter("octomap_occupancy_thres").as_double();
+	octoMapConfig.probHit = get_parameter("octomap_prob_hit").as_double();
+	octoMapConfig.probMiss = get_parameter("octomap_prob_miss").as_double();
+	octoMapConfig.rangeMax = get_parameter("octomap_range_max").as_double();
+	octoMapConfig.resolution = get_parameter("octomap_resolution").as_double();
+
 	mLogger = new RosLogger(mClock, get_logger());
 	mLogger->setLogLevel(DEBUG);
 
@@ -85,6 +102,8 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 		mPclSensor->loadPLY(path, mRobotName);
 	}
 
+	mOctomap = new OctoMap(octoMapConfig, &mClock, mLogger, mGraph);
+
 	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
 		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
 	
@@ -95,6 +114,9 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	
 	mGenerateCloudService = create_service<std_srvs::srv::Empty>("generate_cloud",
 		std::bind(&PointcloudMapper::generateCloud, this, std::placeholders::_1, std::placeholders::_2));
+
+	mRemoveDynamicObjectsService = create_service<std_srvs::srv::Empty>("remove_dynamic_objects",
+		std::bind(&PointcloudMapper::removeDynamicObjects, this, std::placeholders::_1, std::placeholders::_2));
 
 	mGraphPublisher = new GraphPublisher(this, mGraph);
 	mGraphPublisher->addNodeSensor(mPclSensor->getName(), 0,1,0);
@@ -161,6 +183,8 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 			{
 				mGraph->optimize();
 			}
+			
+			mOctomap->addMeasurement(m, mGraph->getVertex(mPclSensor->getLastVertexId()).correctedPose);
 		}
 	}
 	catch(std::exception& e)
@@ -169,8 +193,9 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 	}
 }
 
-void PointcloudMapper::generateCloud(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-                                               std::shared_ptr<std_srvs::srv::Empty::Response> response)
+void PointcloudMapper::generateCloud(
+	const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+	std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
 	mGraph->optimize();
 	VertexObjectList vertices = mGraph->getVerticesFromSensor(mPclSensor->getName());
@@ -190,6 +215,15 @@ void PointcloudMapper::generateCloud(const std::shared_ptr<std_srvs::srv::Empty:
 	{
 		mLogger->message(ERROR, "Failed to write PLY.");
 	}
+	
+	mOctomap->sendMap();
+}
+
+void PointcloudMapper::removeDynamicObjects(
+	const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+	std::shared_ptr<std_srvs::srv::Empty::Response> response)
+{
+	mOctomap->remove_dynamic_objects();
 }
 
 // Register the component with class_loader.

@@ -7,6 +7,7 @@
 #include <slam3d/core/Mapper.hpp>
 #include <slam3d/graph/boost/BoostGraph.hpp>
 #include <slam3d/solver/g2o/G2oSolver.hpp>
+#include <slam3d/octomap/OctoMap.hpp>
 
 #include "RosPclSensor.hpp"
 #include "RosClock.hpp"
@@ -27,8 +28,13 @@ namespace slam3d
 
 		void scanCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
-		void generateCloud(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-                                 std::shared_ptr<std_srvs::srv::Empty::Response> response);
+		void generateCloud(
+			const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+			std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
+		void removeDynamicObjects(
+			const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+			std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
 		Logger* mLogger;
 		Mapper* mMapper;
@@ -39,6 +45,7 @@ namespace slam3d
 		RosClock mClock;
 		TfOdometry* mTfOdom;
 		TfGravity* mTfGrav;
+		OctoMap* mOctomap;
 		
 		GraphPublisher* mGraphPublisher;
 		
@@ -53,6 +60,7 @@ namespace slam3d
 		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mMapPublisher;
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mScanSubscriber;
 		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mGenerateCloudService;
+		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mRemoveDynamicObjectsService;
 		rclcpp::TimerBase::SharedPtr mTransformTimer;
 		
 		tf2_ros::Buffer mTfBuffer;
