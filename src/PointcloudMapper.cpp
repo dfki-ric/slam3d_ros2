@@ -183,8 +183,6 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 			{
 				mGraph->optimize();
 			}
-			
-			mOctomap->addMeasurement(m, mGraph->getVertex(mPclSensor->getLastVertexId()).correctedPose);
 		}
 	}
 	catch(std::exception& e)
@@ -215,15 +213,25 @@ void PointcloudMapper::generateCloud(
 	{
 		mLogger->message(ERROR, "Failed to write PLY.");
 	}
-	
-	mOctomap->sendMap();
 }
 
 void PointcloudMapper::removeDynamicObjects(
 	const std::shared_ptr<std_srvs::srv::Empty::Request> request,
 	std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
+	mGraph->optimize();
+	mOctomap->clear();
+	for(const VertexObject& v : mGraph->getVerticesByType("slam3d::PointCloudMeasurement"))
+	{
+		PointCloudMeasurement::Ptr pc = 
+			boost::dynamic_pointer_cast<PointCloudMeasurement>(mGraph->getMeasurement(v.index));
+		if(pc)
+		{
+			mOctomap->addMeasurement(pc, v.correctedPose);
+		}
+	}
 	mOctomap->remove_dynamic_objects();
+	mOctomap->sendMap();
 }
 
 // Register the component with class_loader.
