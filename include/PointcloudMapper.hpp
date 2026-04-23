@@ -9,6 +9,8 @@
 #include <slam3d/solver/g2o/G2oSolver.hpp>
 #include <slam3d/octomap/OctoMap.hpp>
 
+#include <octomap_msgs/msg/octomap.hpp>
+
 #include "RosPclSensor.hpp"
 #include "RosClock.hpp"
 #include "GraphPublisher.hpp"
@@ -58,6 +60,7 @@ namespace slam3d
 		int mOptimizationRate;
 		
 		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mMapPublisher;
+		rclcpp::Publisher<octomap_msgs::msg::Octomap>::SharedPtr mOctoMapPublisher;
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mScanSubscriber;
 		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mGenerateCloudService;
 		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mRemoveDynamicObjectsService;

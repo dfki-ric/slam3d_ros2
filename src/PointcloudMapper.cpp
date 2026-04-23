@@ -12,6 +12,8 @@
 
 #include <rclcpp_components/register_node_macro.hpp>
 
+#include <octomap_msgs/conversions.h>
+
 using namespace slam3d;
 using namespace std::chrono_literals;
 
@@ -111,6 +113,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mTransformTimer = rclcpp::create_timer(this, this->get_clock(), 100ms, std::bind(&PointcloudMapper::timerCallback, this), mTfCallbackGroup);
 	
 	mMapPublisher = create_publisher<sensor_msgs::msg::PointCloud2>("map", 10);
+	mOctoMapPublisher = create_publisher<octomap_msgs::msg::Octomap>("octomap", 10);
 	
 	mGenerateCloudService = create_service<std_srvs::srv::Empty>("generate_cloud",
 		std::bind(&PointcloudMapper::generateCloud, this, std::placeholders::_1, std::placeholders::_2));
@@ -232,6 +235,12 @@ void PointcloudMapper::removeDynamicObjects(
 	}
 	mOctomap->remove_dynamic_objects();
 	mOctomap->sendMap();
+	
+	octomap_msgs::msg::Octomap msg;
+	msg.header.stamp = mClock.ros_now();
+	msg.header.frame_id = mMapFrame;
+	octomap_msgs::binaryMapToMsg(mOctomap->getOcTree(), msg);
+	mOctoMapPublisher->publish(msg);
 }
 
 // Register the component with class_loader.

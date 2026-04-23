@@ -13,6 +13,7 @@ find_package(pcl_conversions REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(octomap_msgs REQUIRED)
 
 # Public library with generic ROS functions
 add_library(${PROJECT_NAME} SHARED
@@ -43,6 +44,7 @@ set(AMENT_DEPS
 	"visualization_msgs"
 	"std_srvs"
 	"pcl_conversions"
+	"octomap_msgs"
 )
 ament_target_dependencies(${PROJECT_NAME} ${AMENT_DEPS})
 
