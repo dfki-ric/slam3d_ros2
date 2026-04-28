@@ -63,6 +63,7 @@ target_link_libraries(${PROJECT_NAME}
 	slam3d::solver-g2o
 	slam3d::graph-boost
 	slam3d::sensor-pcl
+	slam3d::serialization
 	slam3d::octomap
 )
 

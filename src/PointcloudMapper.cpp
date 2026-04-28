@@ -8,11 +8,14 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <filesystem>
 #include <time.h>
 
 #include <rclcpp_components/register_node_macro.hpp>
 
 #include <octomap_msgs/conversions.h>
+
+#include <slam3d/serialization/GraphSerialization.hpp>
 
 using namespace slam3d;
 using namespace std::chrono_literals;
@@ -35,6 +38,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("optimization_rate", 20);
 	declare_parameter("use_odometry_origin", false);
 	declare_parameter("initial_map", "");
+	declare_parameter("import_graph", false);
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -97,11 +101,25 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 		mTfGrav = nullptr;
 	}
 
-	const std::string path = get_parameter("initial_map").as_string();
-	std::cout << "Path: " << path << std::endl;
-	if(!path.empty())
+	if(get_parameter("import_graph").as_bool())
 	{
-		mPclSensor->loadPLY(path, mRobotName);
+		try
+		{
+			mLogger->message(INFO, "Importing previous graph.");
+			GraphSerialization::fromFolder(mGraph, "slam3d_export");
+		}catch(std::exception& e)
+		{
+			mLogger->message(FATAL, (boost::format("Importing graph failed: %1%") % e.what()).str());
+			rclcpp::shutdown();
+		}
+	}else
+	{
+		const std::string path = get_parameter("initial_map").as_string();
+		if(!path.empty())
+		{
+			mLogger->message(INFO, (boost::format("Loading initial map from %1%.") % path).str());
+			mPclSensor->loadPLY(path, mRobotName);
+		}
 	}
 
 	mOctomap = new OctoMap(octoMapConfig, &mClock, mLogger, mGraph);
@@ -120,6 +138,9 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 
 	mRemoveDynamicObjectsService = create_service<std_srvs::srv::Empty>("remove_dynamic_objects",
 		std::bind(&PointcloudMapper::removeDynamicObjects, this, std::placeholders::_1, std::placeholders::_2));
+
+	mExportGraphService = create_service<std_srvs::srv::Empty>("export_graph",
+		std::bind(&PointcloudMapper::exportGraph, this, std::placeholders::_1, std::placeholders::_2));
 
 	mGraphPublisher = new GraphPublisher(this, mGraph);
 	mGraphPublisher->addNodeSensor(mPclSensor->getName(), 0,1,0);
@@ -241,6 +262,14 @@ void PointcloudMapper::removeDynamicObjects(
 	msg.header.frame_id = mMapFrame;
 	octomap_msgs::binaryMapToMsg(mOctomap->getOcTree(), msg);
 	mOctoMapPublisher->publish(msg);
+}
+
+void PointcloudMapper::exportGraph(
+	const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+	std::shared_ptr<std_srvs::srv::Empty::Response> response)
+{
+	std::filesystem::create_directory("slam3d_export");
+	GraphSerialization::toFolder(mGraph, "slam3d_export");
 }
 
 // Register the component with class_loader.

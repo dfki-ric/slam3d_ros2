@@ -38,6 +38,10 @@ namespace slam3d
 			const std::shared_ptr<std_srvs::srv::Empty::Request> request,
 			std::shared_ptr<std_srvs::srv::Empty::Response> response);
 
+		void exportGraph(
+			const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+			std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
 		Logger* mLogger;
 		Mapper* mMapper;
 		BoostGraph* mGraph;
@@ -64,6 +68,7 @@ namespace slam3d
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mScanSubscriber;
 		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mGenerateCloudService;
 		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mRemoveDynamicObjectsService;
+		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mExportGraphService;
 		rclcpp::TimerBase::SharedPtr mTransformTimer;
 		
 		tf2_ros::Buffer mTfBuffer;
