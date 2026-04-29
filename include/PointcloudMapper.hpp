@@ -7,7 +7,7 @@
 #include <slam3d/core/Mapper.hpp>
 #include <slam3d/graph/boost/BoostGraph.hpp>
 #include <slam3d/solver/g2o/G2oSolver.hpp>
-#include <slam3d/octomap/OctoMap.hpp>
+#include <slam3d_octomap/OctoMap.hpp>
 
 #include <octomap_msgs/msg/octomap.hpp>
 

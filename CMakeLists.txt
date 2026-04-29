@@ -64,7 +64,7 @@ target_link_libraries(${PROJECT_NAME}
 	slam3d::graph-boost
 	slam3d::sensor-pcl
 	slam3d::serialization
-	slam3d::octomap
+	slam3d_octomap::slam3d_octomap
 )
 
 install(
