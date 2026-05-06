@@ -9,15 +9,28 @@
   <arg name="odom_frame" default="odom" />
   <arg name="map_frame" default="map" />
   <arg name="base_frame" default="base_link" />
+  <arg name="use_external_component_container" default="false" />
+  <arg name="external_component_container" default="" />
 
+  <let
+      if="$(var use_external_component_container)"
+      name="fully_qualified_component_container_name"
+      value="$(var external_component_container)"
+      />
   <node
+      unless="$(var use_external_component_container)"
       pkg="rclcpp_components"
       exec="component_container_mt"
       name="component_container"
       namespace="$(var namespace)"
       />
+  <let
+      unless="$(var use_external_component_container)"
+      name="fully_qualified_component_container_name"
+      value="$(var namespace)/component_container"
+      />
 
-  <load_composable_node target="$(var namespace)/component_container">
+  <load_composable_node target="$(var fully_qualified_component_container_name)">
     <composable_node
         pkg="slam3d_ros2"
         plugin="slam3d::PointcloudMapper"
