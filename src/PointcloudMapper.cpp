@@ -220,7 +220,7 @@ void PointcloudMapper::generateCloud(
 	std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
 	mGraph->optimize();
-	VertexObjectList vertices = mGraph->getVerticesFromSensor(mPclSensor->getName());
+	VertexObjectList vertices = mGraph->getVertices({mPclSensor->getName()});
 	PointCloud::Ptr map = mPclSensor->buildMap(vertices);
 	sensor_msgs::msg::PointCloud2 pc2_msg;
 	pcl::toROSMsg(*map, pc2_msg);
@@ -269,7 +269,7 @@ void PointcloudMapper::exportGraph(
 	std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
 	std::filesystem::create_directory("slam3d_export");
-	GraphSerialization::toFolder(mGraph, "slam3d_export");
+	GraphSerialization::toFolder(mGraph, "slam3d_export/graph.yml");
 }
 
 // Register the component with class_loader.
