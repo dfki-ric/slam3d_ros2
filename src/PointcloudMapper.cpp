@@ -16,6 +16,7 @@
 #include <octomap_msgs/conversions.h>
 
 #include <slam3d/serialization/GraphSerialization.hpp>
+#include <slam3d/serialization/MeasurementSerialization.hpp>
 
 using namespace slam3d;
 using namespace std::chrono_literals;
@@ -39,6 +40,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("use_odometry_origin", false);
 	declare_parameter("initial_map", "");
 	declare_parameter("import_graph", false);
+	declare_parameter("import_directory", "slam3d_export");
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -105,8 +107,15 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	{
 		try
 		{
+			const std::string& dir = get_parameter("import_directory").as_string();
 			mLogger->message(INFO, "Importing previous graph.");
-			GraphSerialization::fromFolder(mGraph, "slam3d_export");
+			GraphSerialization::fromFolder(mGraph, dir + "/graph.yml");
+			
+			for(const auto vertex : mGraph->getVertices())
+			{
+				mStorage->add(MeasurementSerialization::fromFile(dir + "/"
+					+ boost::lexical_cast<std::string>(vertex.measurementUuid) + ".s3dm", true));
+			}
 		}catch(std::exception& e)
 		{
 			mLogger->message(FATAL, (boost::format("Importing graph failed: %1%") % e.what()).str());
@@ -268,8 +277,15 @@ void PointcloudMapper::exportGraph(
 	const std::shared_ptr<std_srvs::srv::Empty::Request> request,
 	std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
-	std::filesystem::create_directory("slam3d_export");
-	GraphSerialization::toFolder(mGraph, "slam3d_export/graph.yml");
+	const std::string dir = get_parameter("import_directory").as_string();
+	std::filesystem::create_directory(dir);
+	GraphSerialization::toFolder(mGraph, dir+"/graph.yml");
+	
+	for(const auto entry : *mStorage)
+	{
+		MeasurementSerialization::toFile(entry.second, dir+"/"
+		+ boost::lexical_cast<std::string>(entry.second->getUniqueId()) + ".s3dm", true);
+	}
 }
 
 // Register the component with class_loader.
