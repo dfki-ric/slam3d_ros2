@@ -109,13 +109,8 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 		{
 			const std::string& dir = get_parameter("import_directory").as_string();
 			mLogger->message(INFO, "Importing previous graph.");
-			GraphSerialization::fromFolder(mGraph, dir + "/graph.yml");
-			
-			for(const auto vertex : mGraph->getVertices())
-			{
-				mStorage->add(MeasurementSerialization::fromFile(dir + "/"
-					+ boost::lexical_cast<std::string>(vertex.measurementUuid) + ".s3dm", true));
-			}
+			GraphSerialization::fromFile(mGraph, dir + "/graph.yml");
+			MeasurementSerialization::fromDirectory(mStorage, dir, true);
 		}catch(std::exception& e)
 		{
 			mLogger->message(FATAL, (boost::format("Importing graph failed: %1%") % e.what()).str());
@@ -279,13 +274,8 @@ void PointcloudMapper::exportGraph(
 {
 	const std::string dir = get_parameter("import_directory").as_string();
 	std::filesystem::create_directory(dir);
-	GraphSerialization::toFolder(mGraph, dir+"/graph.yml");
-	
-	for(const auto entry : *mStorage)
-	{
-		MeasurementSerialization::toFile(entry.second, dir+"/"
-		+ boost::lexical_cast<std::string>(entry.second->getUniqueId()) + ".s3dm", true);
-	}
+	GraphSerialization::toFile(mGraph, dir+"/graph.yml");
+	MeasurementSerialization::toDirectory(mStorage, dir, true);
 }
 
 // Register the component with class_loader.
