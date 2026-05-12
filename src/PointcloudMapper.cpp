@@ -258,8 +258,8 @@ void PointcloudMapper::removeDynamicObjects(
 			mOctomap->addMeasurement(pc, v.correctedPose);
 		}
 	}
-	mOctomap->remove_dynamic_objects();
 	mOctomap->sendMap();
+	mOctomap->remove_dynamic_objects();
 	
 	octomap_msgs::msg::Octomap msg;
 	msg.header.stamp = mClock.ros_now();
