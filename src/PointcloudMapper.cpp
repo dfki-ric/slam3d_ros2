@@ -134,8 +134,9 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mTfCallbackGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 	mTransformTimer = rclcpp::create_timer(this, this->get_clock(), 100ms, std::bind(&PointcloudMapper::timerCallback, this), mTfCallbackGroup);
 	
-	mMapPublisher = create_publisher<sensor_msgs::msg::PointCloud2>("map", 10);
-	mOctoMapPublisher = create_publisher<octomap_msgs::msg::Octomap>("octomap", 10);
+	mMapPublisher = create_publisher<sensor_msgs::msg::PointCloud2>("map", 1);
+	mRemovedPointsPublisher = create_publisher<sensor_msgs::msg::PointCloud2>("removed_points", 1);
+	mOctoMapPublisher = create_publisher<octomap_msgs::msg::Octomap>("octomap", 1);
 	
 	mGenerateCloudService = create_service<std_srvs::srv::Empty>("generate_cloud",
 		std::bind(&PointcloudMapper::generateCloud, this, std::placeholders::_1, std::placeholders::_2));
@@ -258,14 +259,21 @@ void PointcloudMapper::removeDynamicObjects(
 			mOctomap->addMeasurement(pc, v.correctedPose);
 		}
 	}
-	mOctomap->sendMap();
-	mOctomap->remove_dynamic_objects();
 	
+	mOctomap->sendMap();	
 	octomap_msgs::msg::Octomap msg;
 	msg.header.stamp = mClock.ros_now();
 	msg.header.frame_id = mMapFrame;
 	octomap_msgs::binaryMapToMsg(mOctomap->getOcTree(), msg);
 	mOctoMapPublisher->publish(msg);
+
+	static slam3d::PointCloud::Ptr removed(new slam3d::PointCloud);
+	mOctomap->remove_dynamic_objects(removed);
+	sensor_msgs::msg::PointCloud2 removed_msg;
+	pcl::toROSMsg(*removed, removed_msg);
+	removed_msg.header.frame_id = mMapFrame;
+	removed_msg.header.stamp = mClock.ros_now();
+	mRemovedPointsPublisher->publish(removed_msg);
 }
 
 void PointcloudMapper::exportGraph(

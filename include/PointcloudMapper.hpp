@@ -64,6 +64,7 @@ namespace slam3d
 		int mOptimizationRate;
 		
 		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mMapPublisher;
+		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mRemovedPointsPublisher;
 		rclcpp::Publisher<octomap_msgs::msg::Octomap>::SharedPtr mOctoMapPublisher;
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mScanSubscriber;
 		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mGenerateCloudService;
