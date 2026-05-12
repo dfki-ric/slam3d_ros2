@@ -76,6 +76,12 @@ namespace slam3d
 			node->declare_parameter(name+".map_resolution", 0.1);
 			node->declare_parameter(name+".map_outlier_radius", 0.2);
 			node->declare_parameter(name+".map_outlier_neighbors", 3);
+			node->declare_parameter(name+".map_crop_min_x", -std::numeric_limits<double>::infinity());
+			node->declare_parameter(name+".map_crop_min_y", -std::numeric_limits<double>::infinity());
+			node->declare_parameter(name+".map_crop_min_z", -std::numeric_limits<double>::infinity());
+			node->declare_parameter(name+".map_crop_max_x",  std::numeric_limits<double>::infinity());
+			node->declare_parameter(name+".map_crop_max_y",  std::numeric_limits<double>::infinity());
+			node->declare_parameter(name+".map_crop_max_z",  std::numeric_limits<double>::infinity());
 			node->declare_parameter(name+".pose_translation", 0.5);
 			node->declare_parameter(name+".pose_rotation", 0.5);
 			node->declare_parameter(name+".neighbor_radius", 5.0);
@@ -97,6 +103,20 @@ namespace slam3d
 			setMapOutlierRemoval(
 				node->get_parameter(name+".map_outlier_radius").as_double(),
 				node->get_parameter(name+".map_outlier_neighbors").as_int());
+
+			setMapCropBox(
+			{
+				(float)node->get_parameter(name+".map_crop_min_x").as_double(),
+				(float)node->get_parameter(name+".map_crop_min_y").as_double(),
+				(float)node->get_parameter(name+".map_crop_min_z").as_double(),
+				1.0
+			},
+			{
+				(float)node->get_parameter(name+".map_crop_max_x").as_double(),
+				(float)node->get_parameter(name+".map_crop_max_y").as_double(),
+				(float)node->get_parameter(name+".map_crop_max_z").as_double(),
+				1.0
+			});
 
 			setNeighborRadius(
 				node->get_parameter(name+".neighbor_radius").as_double(),

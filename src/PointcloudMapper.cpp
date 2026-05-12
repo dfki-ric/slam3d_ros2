@@ -42,16 +42,6 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("import_graph", false);
 	declare_parameter("import_directory", "slam3d_export");
 
-	declare_parameter("map_outlier_radius", 0.0);
-	declare_parameter("map_outlier_neighbors", 0);
-	declare_parameter("map_resolution", 0.0);
-	declare_parameter("map_crop_min_x", -std::numeric_limits<double>::infinity());
-	declare_parameter("map_crop_min_y", -std::numeric_limits<double>::infinity());
-	declare_parameter("map_crop_min_z", -std::numeric_limits<double>::infinity());
-	declare_parameter("map_crop_max_x",  std::numeric_limits<double>::infinity());
-	declare_parameter("map_crop_max_y",  std::numeric_limits<double>::infinity());
-	declare_parameter("map_crop_max_z",  std::numeric_limits<double>::infinity());
-
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
 	mMapFrame = get_parameter("map_frame").as_string();
@@ -84,24 +74,6 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mGraph = new BoostGraph(mLogger, mStorage);
 	mSolver = new G2oSolver(mLogger);
 	mPclSensor = new RosPclSensor(mLaserName, mLogger, this);
-	mPclSensor->setMapOutlierRemoval(
-		get_parameter("map_outlier_radius").as_double(),
-		get_parameter("map_outlier_neighbors").as_int());
-	mPclSensor->setMapResolution(
-		get_parameter("map_resolution").as_double());
-	mPclSensor->setMapCropBox(
-	{
-		(float)get_parameter("map_crop_min_x").as_double(),
-		(float)get_parameter("map_crop_min_y").as_double(),
-		(float)get_parameter("map_crop_min_z").as_double(),
-		1.0
-	},
-	{
-		(float)get_parameter("map_crop_max_x").as_double(),
-		(float)get_parameter("map_crop_max_y").as_double(),
-		(float)get_parameter("map_crop_max_z").as_double(),
-		1.0
-	});
 
 	mGraph->setSolver(mSolver);
 
