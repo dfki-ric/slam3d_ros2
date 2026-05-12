@@ -8,9 +8,15 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <filesystem>
 #include <time.h>
 
 #include <rclcpp_components/register_node_macro.hpp>
+
+#include <octomap_msgs/conversions.h>
+
+#include <slam3d/serialization/GraphSerialization.hpp>
+#include <slam3d/serialization/MeasurementSerialization.hpp>
 
 using namespace slam3d;
 using namespace std::chrono_literals;
@@ -33,6 +39,18 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("optimization_rate", 20);
 	declare_parameter("use_odometry_origin", false);
 	declare_parameter("initial_map", "");
+	declare_parameter("import_graph", false);
+	declare_parameter("import_directory", "slam3d_export");
+
+	declare_parameter("map_outlier_radius", 0.0);
+	declare_parameter("map_outlier_neighbors", 0);
+	declare_parameter("map_resolution", 0.0);
+	declare_parameter("map_crop_min_x", -std::numeric_limits<double>::infinity());
+	declare_parameter("map_crop_min_y", -std::numeric_limits<double>::infinity());
+	declare_parameter("map_crop_min_z", -std::numeric_limits<double>::infinity());
+	declare_parameter("map_crop_max_x",  std::numeric_limits<double>::infinity());
+	declare_parameter("map_crop_max_y",  std::numeric_limits<double>::infinity());
+	declare_parameter("map_crop_max_z",  std::numeric_limits<double>::infinity());
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -42,6 +60,23 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mGravityFrame = get_parameter("gravity_frame").as_string();
 	mOptimizationRate = get_parameter("optimization_rate").as_int();
 
+	OctoMapConfiguration octoMapConfig;
+	declare_parameter("octomap_clamping_thres_max", octoMapConfig.clampingThresMax);
+	declare_parameter("octomap_clamping_thres_min", octoMapConfig.clampingThresMin);
+	declare_parameter("octomap_occupancy_thres", octoMapConfig.occupancyThres);
+	declare_parameter("octomap_prob_hit", octoMapConfig.probHit);
+	declare_parameter("octomap_prob_miss", octoMapConfig.probMiss);
+	declare_parameter("octomap_range_max", octoMapConfig.rangeMax);
+	declare_parameter("octomap_resolution", octoMapConfig.resolution);
+
+	octoMapConfig.clampingThresMax = get_parameter("octomap_clamping_thres_max").as_double();
+	octoMapConfig.clampingThresMin = get_parameter("octomap_clamping_thres_min").as_double();
+	octoMapConfig.occupancyThres = get_parameter("octomap_occupancy_thres").as_double();
+	octoMapConfig.probHit = get_parameter("octomap_prob_hit").as_double();
+	octoMapConfig.probMiss = get_parameter("octomap_prob_miss").as_double();
+	octoMapConfig.rangeMax = get_parameter("octomap_range_max").as_double();
+	octoMapConfig.resolution = get_parameter("octomap_resolution").as_double();
+
 	mLogger = new RosLogger(mClock, get_logger());
 	mLogger->setLogLevel(DEBUG);
 
@@ -49,6 +84,24 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mGraph = new BoostGraph(mLogger, mStorage);
 	mSolver = new G2oSolver(mLogger);
 	mPclSensor = new RosPclSensor(mLaserName, mLogger, this);
+	mPclSensor->setMapOutlierRemoval(
+		get_parameter("map_outlier_radius").as_double(),
+		get_parameter("map_outlier_neighbors").as_int());
+	mPclSensor->setMapResolution(
+		get_parameter("map_resolution").as_double());
+	mPclSensor->setMapCropBox(
+	{
+		(float)get_parameter("map_crop_min_x").as_double(),
+		(float)get_parameter("map_crop_min_y").as_double(),
+		(float)get_parameter("map_crop_min_z").as_double(),
+		1.0
+	},
+	{
+		(float)get_parameter("map_crop_max_x").as_double(),
+		(float)get_parameter("map_crop_max_y").as_double(),
+		(float)get_parameter("map_crop_max_z").as_double(),
+		1.0
+	});
 
 	mGraph->setSolver(mSolver);
 
@@ -78,12 +131,30 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 		mTfGrav = nullptr;
 	}
 
-	const std::string path = get_parameter("initial_map").as_string();
-	std::cout << "Path: " << path << std::endl;
-	if(!path.empty())
+	if(get_parameter("import_graph").as_bool())
 	{
-		mPclSensor->loadPLY(path, mRobotName);
+		try
+		{
+			const std::string& dir = get_parameter("import_directory").as_string();
+			mLogger->message(INFO, "Importing previous graph.");
+			GraphSerialization::fromFile(mGraph, dir + "/graph.yml");
+			MeasurementSerialization::fromDirectory(mStorage, dir, true);
+		}catch(std::exception& e)
+		{
+			mLogger->message(FATAL, (boost::format("Importing graph failed: %1%") % e.what()).str());
+			rclcpp::shutdown();
+		}
+	}else
+	{
+		const std::string path = get_parameter("initial_map").as_string();
+		if(!path.empty())
+		{
+			mLogger->message(INFO, (boost::format("Loading initial map from %1%.") % path).str());
+			mPclSensor->loadPLY(path, mRobotName);
+		}
 	}
+
+	mOctomap = new OctoMap(octoMapConfig, &mClock, mLogger, mGraph);
 
 	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
 		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
@@ -92,9 +163,16 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mTransformTimer = rclcpp::create_timer(this, this->get_clock(), 100ms, std::bind(&PointcloudMapper::timerCallback, this), mTfCallbackGroup);
 	
 	mMapPublisher = create_publisher<sensor_msgs::msg::PointCloud2>("map", 10);
+	mOctoMapPublisher = create_publisher<octomap_msgs::msg::Octomap>("octomap", 10);
 	
 	mGenerateCloudService = create_service<std_srvs::srv::Empty>("generate_cloud",
 		std::bind(&PointcloudMapper::generateCloud, this, std::placeholders::_1, std::placeholders::_2));
+
+	mRemoveDynamicObjectsService = create_service<std_srvs::srv::Empty>("remove_dynamic_objects",
+		std::bind(&PointcloudMapper::removeDynamicObjects, this, std::placeholders::_1, std::placeholders::_2));
+
+	mExportGraphService = create_service<std_srvs::srv::Empty>("export_graph",
+		std::bind(&PointcloudMapper::exportGraph, this, std::placeholders::_1, std::placeholders::_2));
 
 	mGraphPublisher = new GraphPublisher(this, mGraph);
 	mGraphPublisher->addNodeSensor(mPclSensor->getName(), 0,1,0);
@@ -169,11 +247,12 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 	}
 }
 
-void PointcloudMapper::generateCloud(const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-                                               std::shared_ptr<std_srvs::srv::Empty::Response> response)
+void PointcloudMapper::generateCloud(
+	const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+	std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
 	mGraph->optimize();
-	VertexObjectList vertices = mGraph->getVerticesFromSensor(mPclSensor->getName());
+	VertexObjectList vertices = mGraph->getVertices({mPclSensor->getName()});
 	PointCloud::Ptr map = mPclSensor->buildMap(vertices);
 	sensor_msgs::msg::PointCloud2 pc2_msg;
 	pcl::toROSMsg(*map, pc2_msg);
@@ -190,6 +269,41 @@ void PointcloudMapper::generateCloud(const std::shared_ptr<std_srvs::srv::Empty:
 	{
 		mLogger->message(ERROR, "Failed to write PLY.");
 	}
+}
+
+void PointcloudMapper::removeDynamicObjects(
+	const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+	std::shared_ptr<std_srvs::srv::Empty::Response> response)
+{
+	mGraph->optimize();
+	mOctomap->clear();
+	for(const VertexObject& v : mGraph->getVerticesByType("slam3d::PointCloudMeasurement"))
+	{
+		PointCloudMeasurement::Ptr pc = 
+			boost::dynamic_pointer_cast<PointCloudMeasurement>(mGraph->getMeasurement(v.index));
+		if(pc)
+		{
+			mOctomap->addMeasurement(pc, v.correctedPose);
+		}
+	}
+	mOctomap->remove_dynamic_objects();
+	mOctomap->sendMap();
+	
+	octomap_msgs::msg::Octomap msg;
+	msg.header.stamp = mClock.ros_now();
+	msg.header.frame_id = mMapFrame;
+	octomap_msgs::binaryMapToMsg(mOctomap->getOcTree(), msg);
+	mOctoMapPublisher->publish(msg);
+}
+
+void PointcloudMapper::exportGraph(
+	const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+	std::shared_ptr<std_srvs::srv::Empty::Response> response)
+{
+	const std::string dir = get_parameter("import_directory").as_string();
+	std::filesystem::create_directory(dir);
+	GraphSerialization::toFile(mGraph, dir+"/graph.yml");
+	MeasurementSerialization::toDirectory(mStorage, dir, true);
 }
 
 // Register the component with class_loader.

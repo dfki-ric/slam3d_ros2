@@ -61,7 +61,7 @@ void GraphPublisher::publishNodes(const rclcpp::Time& stamp, const std::string& 
 	slam3d::VertexObjectList vertices;
 	for(auto it = mSensorMap.begin(); it != mSensorMap.end(); it++)
 	{
-		slam3d::VertexObjectList v = mGraph->getVerticesFromSensor(it->first);
+		slam3d::VertexObjectList v = mGraph->getVertices({it->first});
 		vertices.insert(vertices.end(), v.begin(), v.end());
 	}
 	
@@ -109,7 +109,7 @@ void GraphPublisher::publishNodes(const rclcpp::Time& stamp, const std::string& 
 
 void GraphPublisher::publishEdges(const std::string& sensor, const rclcpp::Time& stamp, const std::string& frame)
 {
-	slam3d::EdgeObjectList edges = mGraph->getEdgesFromSensor(sensor);
+	slam3d::EdgeObjectList edges = mGraph->getEdges({sensor});
 
 	visualization_msgs::msg::Marker marker;
 	marker.header.frame_id = frame;
@@ -174,7 +174,7 @@ void GraphPublisher::publishEdges(const std::string& sensor, const rclcpp::Time&
 
 void GraphPublisher::publishPoseEdges(const std::string& sensor, const rclcpp::Time& stamp, const std::string& frame)
 {
-	slam3d::EdgeObjectList edges = mGraph->getEdgesFromSensor(sensor);
+	slam3d::EdgeObjectList edges = mGraph->getEdges({sensor});
 
 	visualization_msgs::msg::Marker marker;
 	marker.header.frame_id = frame;

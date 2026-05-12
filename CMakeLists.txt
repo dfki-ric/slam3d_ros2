@@ -3,6 +3,7 @@ project(slam3d_ros2)
 
 # find dependencies
 find_package(slam3d 3 REQUIRED)
+find_package(slam3d_octomap REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
@@ -12,6 +13,7 @@ find_package(pcl_conversions REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(octomap_msgs REQUIRED)
 
 # Public library with generic ROS functions
 add_library(${PROJECT_NAME} SHARED
@@ -33,6 +35,7 @@ target_include_directories(${PROJECT_NAME}
 
 set(AMENT_DEPS
 	"slam3d"
+	"slam3d_octomap"
 	"rclcpp"
 	"rclcpp_components"
 	"tf2_ros"
@@ -41,6 +44,7 @@ set(AMENT_DEPS
 	"visualization_msgs"
 	"std_srvs"
 	"pcl_conversions"
+	"octomap_msgs"
 )
 ament_target_dependencies(${PROJECT_NAME} ${AMENT_DEPS})
 
@@ -59,6 +63,8 @@ target_link_libraries(${PROJECT_NAME}
 	slam3d::solver-g2o
 	slam3d::graph-boost
 	slam3d::sensor-pcl
+	slam3d::serialization
+	slam3d_octomap::slam3d_octomap
 )
 
 install(
