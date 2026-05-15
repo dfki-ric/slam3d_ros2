@@ -3,22 +3,24 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
-
-#include <slam3d/core/Mapper.hpp>
-#include <slam3d/graph/boost/BoostGraph.hpp>
-#include <slam3d/solver/g2o/G2oSolver.hpp>
-#include <slam3d_octomap/OctoMap.hpp>
-
+#include <tf2_ros/buffer.h>
 #include <octomap_msgs/msg/octomap.hpp>
 
-#include "RosPclSensor.hpp"
 #include "RosClock.hpp"
-#include "GraphPublisher.hpp"
-#include "TfOdometry.hpp"
-#include "TfGravity.hpp"
 
 namespace slam3d
 {
+	class Logger;
+	class Mapper;
+	class BoostGraph;
+	class MeasurementStorage;
+	class G2oSolver;
+	class RosPclSensor;
+	class TfOdometry;
+	class TfGravity;
+	class GraphPublisher;
+	class OctoMap;
+	
 	class PointcloudMapper : public rclcpp::Node
 	{
 	public:

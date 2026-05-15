@@ -1,6 +1,16 @@
 #include "PointcloudMapper.hpp"
 #include "RosLogger.hpp"
 
+#include "RosPclSensor.hpp"
+#include "GraphPublisher.hpp"
+#include "TfOdometry.hpp"
+#include "TfGravity.hpp"
+
+#include <slam3d/core/Mapper.hpp>
+#include <slam3d/graph/boost/BoostGraph.hpp>
+#include <slam3d/solver/g2o/G2oSolver.hpp>
+#include <slam3d_octomap/OctoMap.hpp>
+
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/filters/filter_indices.h>

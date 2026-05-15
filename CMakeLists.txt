@@ -20,6 +20,7 @@ add_library(${PROJECT_NAME} SHARED
 	src/TfOdometry.cpp
 	src/TfGravity.cpp
 	src/RosClock.cpp
+	src/RosPclSensor.cpp
 	src/GraphPublisher.cpp
 	src/PointcloudMapper.cpp
 	src/PlyLoader.cpp
