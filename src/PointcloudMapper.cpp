@@ -223,6 +223,7 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 				mGraph->optimize();
 			}
 		}
+		addScanToMap(pc, mPclSensor->getCurrentPose() * laser_pose);
 	}
 	catch(std::exception& e)
 	{

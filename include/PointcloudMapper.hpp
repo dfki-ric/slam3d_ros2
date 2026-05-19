@@ -5,6 +5,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/buffer.h>
 #include <octomap_msgs/msg/octomap.hpp>
+#include <slam3d/sensor/pcl/PointCloudSensor.hpp>
 
 #include "RosClock.hpp"
 
@@ -43,6 +44,8 @@ namespace slam3d
 		void exportGraph(
 			const std::shared_ptr<std_srvs::srv::Empty::Request> request,
 			std::shared_ptr<std_srvs::srv::Empty::Response> response);
+
+		virtual void addScanToMap(const PointCloud::ConstPtr scan, const Transform& pose) {};
 
 		Logger* mLogger;
 		Mapper* mMapper;
