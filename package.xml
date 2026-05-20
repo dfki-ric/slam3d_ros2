@@ -20,6 +20,7 @@
 	<depend>tf2_eigen</depend>
 	<depend>pcl_conversions</depend>
 	<depend>slam3d</depend>
+	<depend>slam3d_octomap</depend>
 	<depend>visualization_msgs</depend>
 
 	<export>
