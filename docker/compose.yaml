@@ -1,0 +1,11 @@
+services:
+  slam3d:
+    image: slam3d:jazzy
+    build: .
+    container_name: slam3d
+    volumes:
+      - ./launch:/opt/launch
+    command: /opt/launch/slam3d
+    ipc: host
+    pid: host
+    network_mode: host
