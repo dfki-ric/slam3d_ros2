@@ -1,11 +1,13 @@
 #! /bin/bash
 
-. /opt/launch/ros_env.sh
+set -e
+
+. ${HOME}/launch/ros_env.sh
 
 ros2 launch slam3d_ros2 slam3d.launch.xml \
      use_sim_time:=false \
      namespace:=/slam3d \
-     config_fname:=/opt/launch/slam3d.yaml \
+     config_fname:=${HOME}/launch/slam3d.yaml \
      cloud_topic:=/velodyne_points \
      cloud_frame:=velodyne_link \
      odom_frame:=odom \

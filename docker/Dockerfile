@@ -1,10 +1,6 @@
 
 FROM ros:jazzy
 
-ENV ROS_WORKSPACE_ROOT=/opt/ws
-
-SHELL ["/bin/bash", "-c"]
-
 RUN apt-get update && apt-get install --no-install-recommends -y \
     ros-jazzy-visualization-msgs \
     ros-jazzy-libnabo \
@@ -16,8 +12,12 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     ros-jazzy-rmw-cyclonedds-cpp \
     && apt-get clean
 
-COPY ws.repos colcon_defaults.yaml ${ROS_WORKSPACE_ROOT}/
+SHELL ["/bin/bash", "-c"]
 
-RUN cd ${ROS_WORKSPACE_ROOT} \
-    && vcs import < ws.repos \
+USER ubuntu
+WORKDIR /home/ubuntu
+
+COPY ws.repos colcon_defaults.yaml .
+
+RUN vcs import < ws.repos \
     && (. /opt/ros/jazzy/setup.bash; colcon build)

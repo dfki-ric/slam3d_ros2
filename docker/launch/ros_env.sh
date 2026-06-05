@@ -1,5 +1,5 @@
 
-. ${ROS_WORKSPACE_ROOT}/install/setup.bash
+. ${HOME}/install/setup.bash
 
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 export ROS_DOMAIN_ID=0
