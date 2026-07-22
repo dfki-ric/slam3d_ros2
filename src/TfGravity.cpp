@@ -27,7 +27,7 @@ Transform TfGravity::getPose(timeval stamp)
 
 void TfGravity::handleNewVertex(IdType vertex)
 {
-	timeval stamp = mGraph->getVertex(vertex).timestamp;
+	timeval stamp = mGraph->getVertex(vertex).measurement.timestamp;
 	Transform currentPose = getPose(stamp);
 	
 	Eigen::Quaterniond state(currentPose.rotation());

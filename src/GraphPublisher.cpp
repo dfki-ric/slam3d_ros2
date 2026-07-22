@@ -77,7 +77,7 @@ void GraphPublisher::publishNodes(const rclcpp::Time& stamp, const std::string& 
 		marker.points[i].y = pose.translation()[1];
 		marker.points[i].z = pose.translation()[2];
 		
-		Color c = mSensorMap.at(it->sensorName);
+		Color c = mSensorMap.at(it->measurement.sensorName);
 		marker.colors[i].r = c.r;
 		marker.colors[i].g = c.g;
 		marker.colors[i].b = c.b;

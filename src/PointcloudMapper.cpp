@@ -20,6 +20,7 @@
 #include <string>
 #include <filesystem>
 #include <time.h>
+#include <boost/format.hpp>
 
 #include <rclcpp_components/register_node_macro.hpp>
 
@@ -81,13 +82,13 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	mLogger->setLogLevel(DEBUG);
 
 	mStorage = new MeasurementStorage();
-	mGraph = new BoostGraph(mLogger, mStorage);
+	mGraph = new BoostGraph(mLogger);
 	mSolver = new G2oSolver(mLogger);
 	mPclSensor = new RosPclSensor(mLaserName, mLogger, this);
 
 	mGraph->setSolver(mSolver);
 
-	mMapper = new Mapper(mGraph, mLogger, Transform::Identity());
+	mMapper = new Mapper(mGraph, mStorage, mLogger, Transform::Identity());
 	mMapper->registerSensor(mPclSensor);
 	mMapper->fixFirst();
 
@@ -136,7 +137,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 		}
 	}
 
-	mOctomap = new OctoMap(octoMapConfig, &mClock, mLogger, mGraph);
+	mOctomap = new OctoMap(octoMapConfig, &mClock, mLogger, mStorage);
 
 	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
 		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
@@ -183,7 +184,13 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 		pcl::Indices indices;
 		pcl::removeNaNFromPointCloud(*pc, *pc, indices);
 		PointCloud::Ptr scan = mPclSensor->downsampleScan(pc);
-		PointCloudMeasurement::Ptr m(new PointCloudMeasurement(scan, mRobotName, mPclSensor->getName(), laser_pose));
+		PointCloudMeasurement::Ptr m(new PointCloudMeasurement(scan));
+		MetaData meta = initMetaData(
+			m->getTimestamp(),
+			m->getTypeName(),
+			mRobotName,
+			mPclSensor->getName(),
+			laser_pose);
 
 		bool added = false;
 		if(mTfOdom)
@@ -195,7 +202,7 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 				mMapper->setStartPose(odometry_pose);
 				mIsOriginInitialized = true;
 			}
-			added = mPclSensor->addMeasurement(m, odometry_pose);
+			added = mPclSensor->addMeasurement(m, meta, odometry_pose);
 			{
 				std::unique_lock<std::mutex> lock(mMutex);
 				mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose() * odometry_pose.inverse()));
@@ -204,7 +211,7 @@ void PointcloudMapper::scanCallback(const sensor_msgs::msg::PointCloud2::SharedP
 			}
 		}else
 		{
-			added = mPclSensor->addMeasurement(m);
+			added = mPclSensor->addMeasurement(m, meta);
 			{
 				std::unique_lock<std::mutex> lock(mMutex);
 				mDrift = tf2::eigenToTransform(orthogonalize(mPclSensor->getCurrentPose()));
@@ -264,10 +271,10 @@ void PointcloudMapper::removeDynamicObjects(
 	for(const VertexObject& v : mGraph->getVerticesByType("slam3d::PointCloudMeasurement"))
 	{
 		PointCloudMeasurement::Ptr pc = 
-			boost::dynamic_pointer_cast<PointCloudMeasurement>(mGraph->getMeasurement(v.index));
+			boost::dynamic_pointer_cast<PointCloudMeasurement>(mStorage->get(v.measurement.uniqueId));
 		if(pc)
 		{
-			mOctomap->addMeasurement(pc, v.correctedPose);
+			mOctomap->addMeasurement(pc, v.measurement, v.correctedPose);
 		}
 	}
 	
@@ -279,7 +286,7 @@ void PointcloudMapper::removeDynamicObjects(
 	mOctoMapPublisher->publish(msg);
 
 	static slam3d::PointCloud::Ptr removed(new slam3d::PointCloud);
-	mOctomap->remove_dynamic_objects(removed);
+	mOctomap->remove_dynamic_objects(mGraph->getVerticesByType("slam3d::PointCloudMeasurement"), removed);
 	sensor_msgs::msg::PointCloud2 removed_msg;
 	pcl::toROSMsg(*removed, removed_msg);
 	removed_msg.header.frame_id = mMapFrame;

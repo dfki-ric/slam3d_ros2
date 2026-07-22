@@ -25,7 +25,7 @@ Transform TfOdometry::getPose(timeval stamp)
 
 void TfOdometry::handleNewVertex(IdType vertex)
 {
-	timeval stamp = mGraph->getVertex(vertex).timestamp;
+	timeval stamp = mGraph->getVertex(vertex).measurement.timestamp;
 	Transform currentPose = getPose(stamp);
 	
 	if(mLastVertex > 0)
