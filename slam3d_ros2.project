@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CodeLite_Project Name="slam3d_ros2" Version="11000" InternalType="">
   <VirtualDirectory Name="include">
+    <File Name="include/VDBMapper.hpp"/>
     <File Name="include/TfGravity.hpp"/>
     <File Name="include/PlyLoader.hpp"/>
     <File Name="include/PointcloudMapper.hpp"/>
@@ -13,6 +14,7 @@
     <File Name="include/GpsPublisher.hpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="src">
+    <File Name="src/VDBMapper.cpp"/>
     <File Name="src/RosPclSensor.cpp"/>
     <File Name="src/TfGravity.cpp"/>
     <File Name="src/PlyLoader.cpp"/>

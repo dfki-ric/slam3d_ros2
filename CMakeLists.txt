@@ -14,9 +14,9 @@ find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(octomap_msgs REQUIRED)
+find_package(vdb_mapping_ros2)
 
-# Public library with generic ROS functions
-add_library(${PROJECT_NAME} SHARED
+set(SOURCE_FILES
 	src/TfOdometry.cpp
 	src/TfGravity.cpp
 	src/RosClock.cpp
@@ -26,12 +26,6 @@ add_library(${PROJECT_NAME} SHARED
 	src/PlyLoader.cpp
 #	src/GpsPublisher.cpp
 #	src/LoopCloser.cpp
-)
-
-target_include_directories(${PROJECT_NAME}
-	PUBLIC
-		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-		$<INSTALL_INTERFACE:include>
 )
 
 set(AMENT_DEPS
@@ -47,6 +41,21 @@ set(AMENT_DEPS
 	"pcl_conversions"
 	"octomap_msgs"
 )
+
+if(${vdb_mapping_ros2_FOUND})
+list(APPEND SOURCE_FILES src/VDBMapper.cpp)
+list(APPEND AMENT_DEPS "vdb_mapping_ros2")
+endif()
+
+# Public library with generic ROS functions
+add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+
+target_include_directories(${PROJECT_NAME}
+	PUBLIC
+		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:include>
+)
+
 ament_target_dependencies(${PROJECT_NAME} ${AMENT_DEPS})
 
 rclcpp_components_register_node(${PROJECT_NAME}
@@ -58,6 +67,13 @@ rclcpp_components_register_node(${PROJECT_NAME}
     PLUGIN "slam3d::PointcloudMapper"
     EXECUTABLE pointcloud_mapper
 )
+
+if(${vdb_mapping_ros2_FOUND})
+rclcpp_components_register_node(${PROJECT_NAME}
+    PLUGIN "slam3d::VDBMapper"
+    EXECUTABLE vdb_mapper
+)
+endif()
 
 target_link_libraries(${PROJECT_NAME}
 	${PCL_COMMON_LIBRARIES}
