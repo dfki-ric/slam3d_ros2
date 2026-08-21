@@ -51,6 +51,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("initial_map", "");
 	declare_parameter("import_graph", false);
 	declare_parameter("import_directory", "slam3d_export");
+	declare_parameter("scan_queue_size", 10);
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -138,7 +139,8 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 
 	mOctomap = new OctoMap(octoMapConfig, &mClock, mLogger, mGraph);
 
-	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
+	const int scanQueueSize = get_parameter("scan_queue_size").as_int();
+	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", scanQueueSize,
 		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
 	
 	mTfCallbackGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
