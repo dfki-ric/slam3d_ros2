@@ -28,25 +28,6 @@ set(SOURCE_FILES
 #	src/LoopCloser.cpp
 )
 
-set(AMENT_DEPS
-	"slam3d"
-	"slam3d_octomap"
-	"rclcpp"
-	"rclcpp_components"
-	"tf2_ros"
-	"tf2_eigen"
-	"sensor_msgs"
-	"visualization_msgs"
-	"std_srvs"
-	"pcl_conversions"
-	"octomap_msgs"
-)
-
-if(${vdb_mapping_ros2_FOUND})
-list(APPEND SOURCE_FILES src/VDBMapper.cpp)
-list(APPEND AMENT_DEPS "vdb_mapping_ros2")
-endif()
-
 # Public library with generic ROS functions
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 
@@ -54,9 +35,28 @@ target_include_directories(${PROJECT_NAME}
 	PUBLIC
 		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 		$<INSTALL_INTERFACE:include>
+		${pcl_conversions_INCLUDE_DIRS}
+		${pcl_ros_INCLUDE_DIRS}
 )
 
-ament_target_dependencies(${PROJECT_NAME} ${AMENT_DEPS})
+target_link_libraries(${PROJECT_NAME}
+	PUBLIC
+		rclcpp_components::component
+		tf2_ros::tf2_ros
+		tf2_eigen::tf2_eigen
+		sensor_msgs::sensor_msgs
+		visualization_msgs::visualization_msgs
+		std_srvs::std_srvs
+		octomap_msgs::octomap_msgs
+		${pcl_conversions_LIBRARIES}
+		${pcl_ros_LIBRARIES}
+		slam3d::solver-g2o
+		slam3d::graph-boost
+		slam3d::sensor-pcl
+		slam3d::serialization
+	PRIVATE
+		slam3d_octomap::slam3d_octomap
+)
 
 rclcpp_components_register_node(${PROJECT_NAME}
     PLUGIN "slam3d::PlyLoader"
@@ -69,20 +69,15 @@ rclcpp_components_register_node(${PROJECT_NAME}
 )
 
 if(${vdb_mapping_ros2_FOUND})
+target_link_libraries(${PROJECT_NAME}
+	PRIVATE
+		vdb_mapping_ros2::vdb_mapping_ros2
+)
 rclcpp_components_register_node(${PROJECT_NAME}
     PLUGIN "slam3d::VDBMapper"
     EXECUTABLE vdb_mapper
 )
 endif()
-
-target_link_libraries(${PROJECT_NAME}
-	${PCL_COMMON_LIBRARIES}
-	slam3d::solver-g2o
-	slam3d::graph-boost
-	slam3d::sensor-pcl
-	slam3d::serialization
-	slam3d_octomap::slam3d_octomap
-)
 
 install(
 	TARGETS ${PROJECT_NAME}
@@ -103,5 +98,15 @@ install(DIRECTORY launch config
 )
 
 ament_export_targets(slam3d_ros2_exports HAS_LIBRARY_TARGET)
-ament_export_dependencies(${AMENT_DEPS})
+ament_export_dependencies(
+	slam3d
+	ament_cmake
+	rclcpp_components
+	tf2_ros
+	tf2_eigen
+	sensor_msgs
+	visualization_msgs
+	std_srvs
+	octomap_msgs
+)
 ament_package()

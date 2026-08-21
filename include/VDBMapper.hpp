@@ -1,12 +1,14 @@
 #pragma once
 
-#include <vdb_mapping/OccupancyVDBMapping.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 
 #include "PointcloudMapper.hpp"
 
+
 namespace slam3d
 {
+	class VDBInternals;
+	
 	class VDBMapper : public PointcloudMapper
 	{
 	public:
@@ -24,8 +26,7 @@ namespace slam3d
 		rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr mVdbMapPublisher;
 		rclcpp::Service<std_srvs::srv::Empty>::SharedPtr mGenerateMapService;
 
-		std::shared_ptr<vdb_mapping::OccupancyVDBMapping> mVdbMapping;
-		vdb_mapping::Config mVdbConfig;
+		std::unique_ptr<VDBInternals> mInternals;
 		int mAdded = 0;
 	};
 }
