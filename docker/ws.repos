@@ -1,0 +1,21 @@
+repositories:
+  src/pclomp:
+    type: git
+    url: https://github.com/dfki-ric/pclomp.git
+    version: master
+  src/libpointmatcher:
+    type: git
+    url: https://github.com/norlab-ulaval/libpointmatcher.git
+    version: 1.4.3
+  src/slam3d:
+    type: git
+    url: https://github.com/dfki-ric/slam3d.git
+    version: master
+  src/slam3d_octomap:
+    type: git
+    url: https://github.com/dfki-ric/slam3d_octomap.git
+    version: master
+  src/slam3d_ros2:
+    type: git
+    url: https://github.com/dfki-ric/slam3d_ros2.git
+    version: master

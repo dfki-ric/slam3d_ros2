@@ -1,0 +1,47 @@
+/**:
+  ros__parameters:
+    automatic_optimize: true
+    laser:
+      link_previous: true
+      map_resolution: 0.1
+      max_neighbor_links: 5
+      min_loop_length: 5
+      neighbor_radius: 5.0
+      patch_building_range: 10
+      pose_translation: 1.0
+      pose_rotation: 1.0
+      coarse_registration:
+        correspondence_randomness: 20
+        euclidean_fitness_epsilon: 1.0
+        max_correspondence_distance: 5.0
+        max_fitness_score: 3.0
+        max_rotation: 1.0
+        max_translation: 1.0
+        maximum_iterations: 5
+        maximum_optimizer_iterations: 20
+        outlier_ratio: 0.35
+        point_cloud_density: 0.5
+        registration_algorithm: NDT
+        resolution: 1.0
+        rotation_epsilon: 0.002
+        step_size: 0.05
+        transformation_epsilon: 1.0e-05
+      registration:
+        correspondence_randomness: 20
+        euclidean_fitness_epsilon: 1.0
+        max_correspondence_distance: 2.5
+        max_fitness_score: 2.0
+        maximum_iterations: 50
+        maximum_optimizer_iterations: 20
+        outlier_ratio: 0.35
+        point_cloud_density: 0.2
+        registration_algorithm: NDT
+        resolution: 1.0
+        rotation_epsilon: 0.002
+        step_size: 0.05
+        transformation_epsilon: 1.0e-05
+      scan_resolution: 0.1
+    robot_name: robot
+    use_odometry: true
+    use_odometry_origin: true
+    optimization_rate: 20

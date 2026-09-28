@@ -1,0 +1,7 @@
+
+. ${HOME}/install/setup.bash
+
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export ROS_DOMAIN_ID=0
+export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+export ROS_STATIC_PEERS=
