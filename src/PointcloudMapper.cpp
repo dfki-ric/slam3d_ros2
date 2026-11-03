@@ -52,6 +52,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("initial_map", "");
 	declare_parameter("import_graph", false);
 	declare_parameter("import_directory", "slam3d_export");
+	declare_parameter("scan_queue_size", 10);
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -139,7 +140,8 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 
 	mOctomap = new OctoMap(octoMapConfig, &mClock, mLogger, mStorage);
 
-	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
+	const int scanQueueSize = get_parameter("scan_queue_size").as_int();
+	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", scanQueueSize,
 		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
 	
 	mTfCallbackGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -300,8 +302,12 @@ void PointcloudMapper::exportGraph(
 {
 	const std::string dir = get_parameter("import_directory").as_string();
 	std::filesystem::create_directory(dir);
+	const std::string fullPath = std::filesystem::absolute(dir).string();
+	mLogger->message(INFO, (boost::format("Exporting graph to '%1%'.") % fullPath).str());
 	GraphSerialization::toFile(mGraph, dir+"/graph.yml");
 	MeasurementSerialization::toDirectory(mStorage, dir, true);
+	mLogger->message(INFO, (boost::format("Graph exported to '%1%/graph.yml' "
+		"with measurements alongside.") % fullPath).str());
 }
 
 // Register the component with class_loader.
