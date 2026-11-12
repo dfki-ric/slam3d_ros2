@@ -51,6 +51,9 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("use_odometry_origin", false);
 	declare_parameter("initial_map", "");
 	declare_parameter("initial_map_radius", 10.0);
+	declare_parameter("initial_map_offset_x", 0.0);
+	declare_parameter("initial_map_offset_y", 0.0);
+	declare_parameter("initial_map_offset_z", 2.0);
 	declare_parameter("import_graph", false);
 	declare_parameter("import_directory", "slam3d_export");
 	declare_parameter("scan_queue_size", 10);
@@ -140,7 +143,9 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 			if(ply_reader.read(path, *pcl_cloud) == 0)
 			{
 				Transform offset = Transform::Identity();
-				offset.translation().z() = 2.0;
+				offset.translation().x() = get_parameter("initial_map_offset_x").as_double();
+				offset.translation().y() = get_parameter("initial_map_offset_y").as_double();
+				offset.translation().z() = get_parameter("initial_map_offset_z").as_double();
 				pcl::transformPointCloud(*pcl_cloud, *pcl_cloud_tf, offset.inverse().cast<float>());
 				
 				mLogger->message(INFO, (boost::format("Loading initial map from %1%.") % path).str());
