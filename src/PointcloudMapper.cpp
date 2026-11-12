@@ -50,6 +50,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("optimization_rate", 20);
 	declare_parameter("use_odometry_origin", false);
 	declare_parameter("initial_map", "");
+	declare_parameter("initial_map_radius", 10.0);
 	declare_parameter("import_graph", false);
 	declare_parameter("import_directory", "slam3d_export");
 	declare_parameter("scan_queue_size", 10);
@@ -148,7 +149,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 				mPclReference = new PointCloudReference("InitialMap", mGraph, mLogger);
 				PointCloudMeasurement::Ptr initial_map(
 					new PointCloudMeasurement(pcl_cloud_tf, mRobotName, "InitialMap", offset * pc_tr));
-				mPclReference->addReference(initial_map, Transform::Identity());
+				mPclReference->addReference(initial_map, Transform::Identity(), get_parameter("initial_map_radius").as_double());
 				mMapper->registerPoseSensor(mPclReference);
 			}
 		}
