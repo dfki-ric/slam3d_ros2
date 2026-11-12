@@ -17,6 +17,7 @@ namespace slam3d
 	class MeasurementStorage;
 	class G2oSolver;
 	class RosPclSensor;
+	class PointCloudReference;
 	class TfOdometry;
 	class TfGravity;
 	class GraphPublisher;
@@ -52,6 +53,7 @@ namespace slam3d
 		BoostGraph* mGraph;
 		MeasurementStorage* mStorage;
 		G2oSolver* mSolver;
+		PointCloudReference* mPclReference;
 		RosPclSensor* mPclSensor;
 		RosClock mClock;
 		TfOdometry* mTfOdom;

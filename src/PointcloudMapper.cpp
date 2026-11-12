@@ -10,6 +10,7 @@
 #include <slam3d/graph/boost/BoostGraph.hpp>
 #include <slam3d/solver/g2o/G2oSolver.hpp>
 #include <slam3d_octomap/OctoMap.hpp>
+#include <slam3d/sensor/pcl/PointCloudReference.hpp>
 
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <pcl_conversions/pcl_conversions.h>
@@ -132,8 +133,24 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 		const std::string path = get_parameter("initial_map").as_string();
 		if(!path.empty())
 		{
-			mLogger->message(INFO, (boost::format("Loading initial map from %1%.") % path).str());
-			mPclSensor->loadPLY(path, mRobotName);
+			PointCloud::Ptr pcl_cloud(new PointCloud());
+			PointCloud::Ptr pcl_cloud_tf(new PointCloud());
+			pcl::PLYReader ply_reader;
+			if(ply_reader.read(path, *pcl_cloud) == 0)
+			{
+				Transform offset = Transform::Identity();
+				offset.translation().z() = 2.0;
+				pcl::transformPointCloud(*pcl_cloud, *pcl_cloud_tf, offset.inverse().cast<float>());
+				
+				mLogger->message(INFO, (boost::format("Loading initial map from %1%.") % path).str());
+				Transform pc_tr(pcl_cloud->sensor_orientation_.cast<ScalarType>());
+				pc_tr.translation() = pcl_cloud->sensor_origin_.block(0,0,3,1).cast<ScalarType>();
+				mPclReference = new PointCloudReference("InitialMap", mGraph, mLogger);
+				PointCloudMeasurement::Ptr initial_map(
+					new PointCloudMeasurement(pcl_cloud_tf, mRobotName, "InitialMap", offset * pc_tr));
+				mPclReference->addReference(initial_map, Transform::Identity());
+				mMapper->registerPoseSensor(mPclReference);
+			}
 		}
 	}
 
@@ -238,7 +255,7 @@ void PointcloudMapper::generateCloud(
 	std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
 	mGraph->optimize();
-	VertexObjectList vertices = mGraph->getVertices({mPclSensor->getName()});
+	VertexObjectList vertices = mGraph->getVerticesByType("slam3d::PointCloudMeasurement");
 	PointCloud::Ptr map = mPclSensor->buildMap(vertices);
 	sensor_msgs::msg::PointCloud2 pc2_msg;
 	pcl::toROSMsg(*map, pc2_msg);
