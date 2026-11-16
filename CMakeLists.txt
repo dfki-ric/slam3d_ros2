@@ -36,7 +36,6 @@ target_include_directories(${PROJECT_NAME}
 		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 		$<INSTALL_INTERFACE:include>
 		${pcl_conversions_INCLUDE_DIRS}
-		${pcl_ros_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -48,8 +47,8 @@ target_link_libraries(${PROJECT_NAME}
 		visualization_msgs::visualization_msgs
 		std_srvs::std_srvs
 		octomap_msgs::octomap_msgs
+		${pcl_conversions_TARGETS}
 		${pcl_conversions_LIBRARIES}
-		${pcl_ros_LIBRARIES}
 		slam3d::solver-g2o
 		slam3d::graph-boost
 		slam3d::sensor-pcl
