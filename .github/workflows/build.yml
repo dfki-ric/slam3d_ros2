@@ -1,0 +1,89 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: ${{ matrix.ros_distro }}
+    runs-on: ubuntu-latest
+    container:
+      image: ros:${{ matrix.ros_distro }}-ros-base
+    strategy:
+      fail-fast: false
+      matrix:
+        ros_distro: [ humble, jazzy, lyrical, rolling ]
+    # Ubuntu 26.04 (lyrical, rolling): slam3d's tests link Boost::system, which Boost 1.90 no
+    # longer provides, so a failure does not fail the workflow
+    continue-on-error: ${{ matrix.ros_distro == 'lyrical' || matrix.ros_distro == 'rolling' }}
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      # CMake 4 rejects cmake_minimum_required < 3.5, which slam3d_octomap still uses
+      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          path: src/slam3d_ros2
+
+      # slam3d and slam3d_octomap are plain CMake packages that are not released into the ROS
+      # index, so they are checked out into the same workspace and built by colcon
+      - name: Checkout slam3d
+        uses: actions/checkout@v7
+        with:
+          repository: dfki-ric/slam3d
+          ref: master
+          path: src/slam3d
+
+      - name: Checkout slam3d_octomap
+        uses: actions/checkout@v7
+        with:
+          repository: dfki-ric/slam3d_octomap
+          ref: master
+          path: src/slam3d_octomap
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y ccache
+          rosdep update
+          rosdep install --from-paths src/slam3d_ros2 --ignore-src -y \
+            --rosdistro "${{ matrix.ros_distro }}" --skip-keys "slam3d slam3d_octomap"
+          # dependencies of slam3d and slam3d_octomap, which have no package.xml
+          apt-get install -y $(rosdep resolve --rosdistro "${{ matrix.ros_distro }}" \
+            libg2o eigen boost libpcl-all-dev yaml-cpp liboctomap-dev | grep -v '^#')
+
+      - name: Restore ccache
+        id: ccache-restore
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ccache-${{ matrix.ros_distro }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-${{ matrix.ros_distro }}-
+
+      - name: Build
+        shell: bash
+        run: |
+          source /opt/ros/${{ matrix.ros_distro }}/setup.bash
+          colcon build --event-handlers console_cohesion+ \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      # only the tests of this package; slam3d's tests run in its own CI
+      - name: Test
+        shell: bash
+        run: |
+          source /opt/ros/${{ matrix.ros_distro }}/setup.bash
+          colcon test --packages-select slam3d_ros2 --event-handlers console_direct+
+          colcon test-result --verbose
+
+      - name: Save ccache
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
