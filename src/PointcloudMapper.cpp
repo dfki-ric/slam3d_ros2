@@ -11,6 +11,7 @@
 #include <slam3d/solver/g2o/G2oSolver.hpp>
 #include <slam3d_octomap/OctoMap.hpp>
 #include <slam3d/sensor/pcl/PointCloudReference.hpp>
+#include <slam3d/sensor/pcl/Common.hpp>
 
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <pcl_conversions/pcl_conversions.h>
@@ -51,6 +52,7 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("use_odometry_origin", false);
 	declare_parameter("initial_map", "");
 	declare_parameter("initial_map_radius", 10.0);
+	declare_parameter("initial_map_resolution", 0.5);
 	declare_parameter("initial_map_offset_x", 0.0);
 	declare_parameter("initial_map_offset_y", 0.0);
 	declare_parameter("initial_map_offset_z", 2.0);
@@ -142,11 +144,12 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 			pcl::PLYReader ply_reader;
 			if(ply_reader.read(path, *pcl_cloud) == 0)
 			{
+				PointCloud::Ptr pcl_cloud_ds = downsample(pcl_cloud, get_parameter("initial_map_resolution").as_double());
 				Transform offset = Transform::Identity();
 				offset.translation().x() = get_parameter("initial_map_offset_x").as_double();
 				offset.translation().y() = get_parameter("initial_map_offset_y").as_double();
 				offset.translation().z() = get_parameter("initial_map_offset_z").as_double();
-				pcl::transformPointCloud(*pcl_cloud, *pcl_cloud_tf, offset.inverse().cast<float>());
+				pcl::transformPointCloud(*pcl_cloud_ds, *pcl_cloud_tf, offset.inverse().cast<float>());
 				
 				mLogger->message(INFO, (boost::format("Loading initial map from %1%.") % path).str());
 				Transform pc_tr(pcl_cloud->sensor_orientation_.cast<ScalarType>());
