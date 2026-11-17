@@ -10,6 +10,8 @@
 #include <slam3d/graph/boost/BoostGraph.hpp>
 #include <slam3d/solver/g2o/G2oSolver.hpp>
 #include <slam3d_octomap/OctoMap.hpp>
+#include <slam3d/sensor/pcl/PointCloudReference.hpp>
+#include <slam3d/sensor/pcl/Common.hpp>
 
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <pcl_conversions/pcl_conversions.h>
@@ -49,8 +51,14 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 	declare_parameter("optimization_rate", 20);
 	declare_parameter("use_odometry_origin", false);
 	declare_parameter("initial_map", "");
+	declare_parameter("initial_map_radius", 10.0);
+	declare_parameter("initial_map_resolution", 0.5);
+	declare_parameter("initial_map_offset_x", 0.0);
+	declare_parameter("initial_map_offset_y", 0.0);
+	declare_parameter("initial_map_offset_z", 2.0);
 	declare_parameter("import_graph", false);
 	declare_parameter("import_directory", "slam3d_export");
+	declare_parameter("scan_queue_size", 10);
 
 	mRobotName = get_parameter("robot_name").as_string();
 	mLaserName = get_parameter("laser_name").as_string();
@@ -131,14 +139,34 @@ PointcloudMapper::PointcloudMapper(const rclcpp::NodeOptions & options, const st
 		const std::string path = get_parameter("initial_map").as_string();
 		if(!path.empty())
 		{
-			mLogger->message(INFO, (boost::format("Loading initial map from %1%.") % path).str());
-			mPclSensor->loadPLY(path, mRobotName);
+			PointCloud::Ptr pcl_cloud(new PointCloud());
+			PointCloud::Ptr pcl_cloud_tf(new PointCloud());
+			pcl::PLYReader ply_reader;
+			if(ply_reader.read(path, *pcl_cloud) == 0)
+			{
+				PointCloud::Ptr pcl_cloud_ds = downsample(pcl_cloud, get_parameter("initial_map_resolution").as_double());
+				Transform offset = Transform::Identity();
+				offset.translation().x() = get_parameter("initial_map_offset_x").as_double();
+				offset.translation().y() = get_parameter("initial_map_offset_y").as_double();
+				offset.translation().z() = get_parameter("initial_map_offset_z").as_double();
+				pcl::transformPointCloud(*pcl_cloud_ds, *pcl_cloud_tf, offset.inverse().cast<float>());
+				
+				mLogger->message(INFO, (boost::format("Loading initial map from %1%.") % path).str());
+				Transform pc_tr(pcl_cloud->sensor_orientation_.cast<ScalarType>());
+				pc_tr.translation() = pcl_cloud->sensor_origin_.block(0,0,3,1).cast<ScalarType>();
+				mPclReference = new PointCloudReference("InitialMap", mGraph, mLogger);
+				PointCloudMeasurement::Ptr initial_map(
+					new PointCloudMeasurement(pcl_cloud_tf, mRobotName, "InitialMap", offset * pc_tr));
+				mPclReference->addReference(initial_map, Transform::Identity(), get_parameter("initial_map_radius").as_double());
+				mMapper->registerPoseSensor(mPclReference);
+			}
 		}
 	}
 
 	mOctomap = new OctoMap(octoMapConfig, &mClock, mLogger, mGraph);
 
-	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", 10,
+	const int scanQueueSize = get_parameter("scan_queue_size").as_int();
+	mScanSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("scan", scanQueueSize,
 		std::bind(&PointcloudMapper::scanCallback, this, std::placeholders::_1));
 	
 	mTfCallbackGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -236,7 +264,7 @@ void PointcloudMapper::generateCloud(
 	std::shared_ptr<std_srvs::srv::Empty::Response> response)
 {
 	mGraph->optimize();
-	VertexObjectList vertices = mGraph->getVertices({mPclSensor->getName()});
+	VertexObjectList vertices = mGraph->getVerticesByType("slam3d::PointCloudMeasurement");
 	PointCloud::Ptr map = mPclSensor->buildMap(vertices);
 	sensor_msgs::msg::PointCloud2 pc2_msg;
 	pcl::toROSMsg(*map, pc2_msg);
@@ -293,8 +321,12 @@ void PointcloudMapper::exportGraph(
 {
 	const std::string dir = get_parameter("import_directory").as_string();
 	std::filesystem::create_directory(dir);
+	const std::string fullPath = std::filesystem::absolute(dir).string();
+	mLogger->message(INFO, (boost::format("Exporting graph to '%1%'.") % fullPath).str());
 	GraphSerialization::toFile(mGraph, dir+"/graph.yml");
 	MeasurementSerialization::toDirectory(mStorage, dir, true);
+	mLogger->message(INFO, (boost::format("Graph exported to '%1%/graph.yml' "
+		"with measurements alongside.") % fullPath).str());
 }
 
 // Register the component with class_loader.
